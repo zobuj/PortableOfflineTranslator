@@ -6,4 +6,17 @@
 
 # MCU Software Infastructure
 
+- We are going to need to write software specific to our microconroller to be able to communicate over the I2S protocol to the audio devices, and use I2C to communicate to the LCD screen and the compute module. 
+
+- We are also going to require designing a pipeline to be able to await for a user request to translate then service that request and poll data back from the secondary processing unit. 
+
 # Hardware Logistics
+
+- PCB Design of our microcontroller along with all of the audio subsystem, power subsystem, user interface subsystem, and communication network.
+
+- We need to order all of the components and analyze datasheets to ensure that they have the specifications to work for our application.
+
+- We need to set up a breadboard prototype after we get our software simulations to work. 
+
+- Eventually, we are going to need to design a enclosing for this design to be able to be manageable by an end user.
+
