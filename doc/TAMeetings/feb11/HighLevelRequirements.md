@@ -24,3 +24,8 @@
 
 - We are also going to need to think about the thermal management of our system to make sure to appropriate power delivery to each subsystem.
 
+
+
+# Summary
+
+Overall, we need to get our software to be working on a general pupose computer then we also need to prototype our design onto a breadboard to test the system design. We will also need to work on everything separately to ensure that each subsystem is working individually.
