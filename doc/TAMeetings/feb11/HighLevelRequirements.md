@@ -10,6 +10,8 @@
 
 - We are also going to require designing a pipeline to be able to await for a user request to translate then service that request and poll data back from the secondary processing unit. 
 
+- We also have to think about how we are going to be programming the MCU and adding pinouts to be able to actually connect to the micro controller.
+
 # Hardware Logistics
 
 - PCB Design of our microcontroller along with all of the audio subsystem, power subsystem, user interface subsystem, and communication network.
@@ -19,4 +21,6 @@
 - We need to set up a breadboard prototype after we get our software simulations to work. 
 
 - Eventually, we are going to need to design a enclosing for this design to be able to be manageable by an end user.
+
+- We are also going to need to think about the thermal management of our system to make sure to appropriate power delivery to each subsystem.
 
