@@ -1,26 +1,29 @@
-# Entry 0 (**02-11-2025**)
+# Lorenzo Bujalil Silva's Notebook
+1. [02-11-2025 - First TA Meeting](#02-11-2025---first-ta-meeting)
 
-## Objectives
+# 02-11-2025 - First TA Meeting
+
+### Objectives
 - Set up project repo.
 - Get started building software infastructure.
 - Set up lab notebook.
 - Work on project proposal and block diagram.
 
-## Tasks Completed
+### Tasks Completed
 - Project repo created.
 - Set up the speech to text transcription model.
 - Created infastructure for lab notebook.
 - Started work on the block diagram.
 
-## Blockers
+### Blockers
 - No blockers today.
 
-## Solutions
+### Solutions
 - N/A
 
-## Next Steps
+### Next Steps
 - Continue working on the project proposal.
 
-## Notes (Optional)
+### Notes (Optional)
 - N/A
 
