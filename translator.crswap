@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36" version="26.0.11">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" version="26.0.11">
   <diagram name="Page-1" id="KYx6GJGZJKJEIgQyoxsa">
-    <mxGraphModel dx="2213" dy="767" grid="1" gridSize="10" guides="0" tooltips="1" connect="1" arrows="0" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="2970" dy="1193" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -179,83 +179,14 @@
         <mxCell id="-2ontFsn7m-PwmhKNquD-78" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
           <mxGeometry x="852.5" y="337.5" width="15" height="15" as="geometry" />
         </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-1" value="" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+        <mxCell id="GjWoa05RtaC8_RHYvAVR-1" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="1580" y="580" width="740" height="540" as="geometry" />
         </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-2" value="&lt;span style=&quot;font-size: 24px;&quot;&gt;Power Management Subsystem&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+        <mxCell id="GjWoa05RtaC8_RHYvAVR-2" value="&lt;font style=&quot;font-size: 24px;&quot;&gt;Power Management Subsystem&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
           <mxGeometry x="1655" y="600" width="590" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-9" value="" style="whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="1980" y="735" width="310" height="290" as="geometry" />
-        </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-7" value="&lt;h1 style=&quot;-webkit-font-smoothing: antialiased; margin-top: 0px; font-weight: var(--heading-font-weight); margin-bottom: 14px; line-height: 1.43; text-align: start; background-color: rgb(255, 255, 255); box-sizing: border-box !important;&quot; class=&quot;product-meta__title heading h1&quot;&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 20px;&quot;&gt;18650 Li-Ion&lt;/font&gt;&lt;/h1&gt;" style="whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="2020" y="815" width="220" height="85" as="geometry" />
-        </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-8" value="&lt;h1 style=&quot;-webkit-font-smoothing: antialiased; margin-top: 0px; font-weight: var(--heading-font-weight); margin-bottom: 14px; line-height: 1.43; text-align: start; background-color: rgb(255, 255, 255); box-sizing: border-box !important;&quot; class=&quot;product-meta__title heading h1&quot;&gt;&lt;font style=&quot;font-size: 20px;&quot;&gt;18650 Li-Ion&lt;/font&gt;&lt;/h1&gt;" style="whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="2020" y="900" width="220" height="85" as="geometry" />
-        </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-10" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;18650 Dual Battery Holder&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
-          <mxGeometry x="1980" y="745" width="310" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-17" value="&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; font-size: 18px;&quot;&gt;&lt;font color=&quot;#222222&quot;&gt;LM317LIDR (LDO)&lt;/font&gt;&lt;/span&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="1630" y="930" width="180" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-18" value="&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; font-size: 18px;&quot;&gt;&lt;font color=&quot;#222222&quot;&gt;LM317LIDR (LDO)&lt;/font&gt;&lt;/span&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="1630" y="750" width="180" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-25" value="" style="endArrow=none;html=1;rounded=0;" parent="1" edge="1">
-          <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="1880" y="890" as="sourcePoint" />
-            <mxPoint x="1980" y="890" as="targetPoint" />
-            <Array as="points">
-              <mxPoint x="1880" y="890" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-35" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;7.4-8.4V&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="GjWoa05RtaC8_RHYvAVR-25" vertex="1" connectable="0">
-          <mxGeometry x="-0.09" y="-2" relative="1" as="geometry">
-            <mxPoint as="offset" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-27" value="" style="endArrow=classic;html=1;rounded=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" target="GjWoa05RtaC8_RHYvAVR-18" edge="1">
-          <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="1880" y="890" as="sourcePoint" />
-            <mxPoint x="1810" y="830" as="targetPoint" />
-            <Array as="points">
-              <mxPoint x="1880" y="800" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-28" value="" style="endArrow=classic;html=1;rounded=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" edge="1">
-          <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="1880" y="890" as="sourcePoint" />
-            <mxPoint x="1810" y="980" as="targetPoint" />
-            <Array as="points">
-              <mxPoint x="1880" y="980" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-29" value="" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="GjWoa05RtaC8_RHYvAVR-18" edge="1">
-          <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="1700" y="840" as="sourcePoint" />
-            <mxPoint x="1490" y="800" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-32" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;3.3V&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="GjWoa05RtaC8_RHYvAVR-29" vertex="1" connectable="0">
-          <mxGeometry x="0.0786" y="1" relative="1" as="geometry">
-            <mxPoint x="1" as="offset" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-30" value="" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="1" edge="1">
-          <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="1630" y="980" as="sourcePoint" />
-            <mxPoint x="1490" y="980" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="GjWoa05RtaC8_RHYvAVR-33" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;5V&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="GjWoa05RtaC8_RHYvAVR-30" vertex="1" connectable="0">
-          <mxGeometry x="0.0643" relative="1" as="geometry">
-            <mxPoint x="1" as="offset" />
-          </mxGeometry>
+        <mxCell id="GjWoa05RtaC8_RHYvAVR-3" value="" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2050" y="735" width="230" height="265" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
