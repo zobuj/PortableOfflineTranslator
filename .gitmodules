@@ -1,9 +1,6 @@
 [submodule "src/rspcm/whisper.cpp"]
 	path = src/rspcm/whisper.cpp
 	url = https://github.com/ggerganov/whisper.cpp.git
-[submodule "src/rspcm/marian"]
-	path = src/rspcm/marian
-	url = https://github.com/marian-nmt/marian
 [submodule "src/rspcm/piper"]
 	path = src/rspcm/piper
 	url = https://github.com/rhasspy/piper
