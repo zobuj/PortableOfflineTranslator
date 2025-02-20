@@ -51,3 +51,31 @@
 ### Notes (Optional)
 - 
 
+---
+
+# 02-19-2025 - Integrating Llama to Translation Pipeline
+
+### Objectives
+- 
+
+
+### Tasks Completed
+- 
+
+### Blockers
+- 
+
+### Solutions
+- 
+
+### Next Steps
+- 
+
+### Notes (Optional)
+- Build Steps for Llama:
+    ```bash
+    git clone https://github.com/ggml-org/llama.cpp
+    cd llama
+    cmake -B build -DLLAMA_BUILD_TESTS=OFF
+    cmake --build build --config Release
+    ```

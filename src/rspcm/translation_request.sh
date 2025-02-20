@@ -23,7 +23,7 @@ source ../pcm_generator/venv/bin/activate
 # Run Python script with text argument
 python3 ../pcm_generator/generate_pcm_data.py --text "$TEXT" --mp3 ../pcm_generator/sample.mp3 --wav ../pcm_generator/sample.wav --pcm ../pcm_generator/sample.pcm
 
-ffplay -f s24le -ar 24000 ../pcm_generator/sample.pcm
+# ffplay -f s24le -ar 24000 ../pcm_generator/sample.pcm
 
 # Send signal to pipeline process
 kill -SIGUSR1 "$pid"

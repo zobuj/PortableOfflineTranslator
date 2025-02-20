@@ -7,3 +7,7 @@
 [submodule "src/rspcm/piper"]
 	path = src/rspcm/piper
 	url = https://github.com/rhasspy/piper
+[submodule "src/rspcm/llama.cpp"]
+	path = src/rspcm/llama.cpp
+	url = https://github.com/ggml-org/llama.cpp
+
