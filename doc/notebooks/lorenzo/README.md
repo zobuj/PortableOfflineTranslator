@@ -1,6 +1,7 @@
 # Lorenzo Bujalil Silva's Notebook
 1. [02-11-2025 - First TA Meeting](#02-11-2025---first-ta-meeting)
 
+---
 # 02-11-2025 - First TA Meeting
 
 ### Objectives
@@ -26,4 +27,27 @@
 
 ### Notes (Optional)
 - N/A
+
+---
+
+# 02-19-2025 - Integrating Whisper to Translation Pipeline & Setting up Build System
+
+### Objectives
+- 
+
+
+### Tasks Completed
+- 
+
+### Blockers
+- 
+
+### Solutions
+- 
+
+### Next Steps
+- 
+
+### Notes (Optional)
+- 
 
