@@ -15,7 +15,6 @@ void mcu_translate_signal_handler(int signum){
     }
 }
 
-
 //  500 -> 00:05.000
 // 6000 -> 01:00.000
 // To Timestamp Helper Function - stream.cpp
@@ -180,7 +179,6 @@ void translate(){
         fprintf(stderr, "\n");
     }
 
-
     // Read PCM Data - Will need to change for I2C later
     {
         std::string pcm_filename = "../pcm_generator/sample.pcm";
@@ -262,9 +260,6 @@ void translate(){
         }
     }
 
-
-
-
     clock_gettime(CLOCK_MONOTONIC, &end);
 
     elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
@@ -275,11 +270,10 @@ void translate(){
 
 int main(int argc, char ** argv){
     fprintf(stdout, "Starting Translation Pipeline...\n");
-
     signal(SIGUSR1, mcu_translate_signal_handler);
-
     while(1){
         fprintf(stdout, "Waiting for translation request (send SIGUSR1 to PID %d)...\n", getpid());
+        fprintf(stdout, "Press Ctrl+C to exit.\n");
         pause();
         if(start_translation) {
             translate();
