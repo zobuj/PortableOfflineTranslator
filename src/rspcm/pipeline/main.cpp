@@ -46,7 +46,7 @@ struct whisper_params {
     bool translate            = false;
     bool no_context           = true;
     bool print_special_tokens = false;
-    bool no_timestamps        = true;
+    bool no_timestamps        = true; // Sets the timestamps for the data
 
     std::string language  = "en";
     std::string model     = "whisper.cpp/models/ggml-tiny.en.bin";
@@ -191,22 +191,34 @@ void translate(){
             return;
         }
         
-        std::vector<int16_t> pcm16;
-        int16_t sample;
+        std::vector<uint8_t> pcm24_data;
+        pcm24_data.resize(3);
+
+        std::vector<int32_t> pcm24;
         
-        while (pcm_file.read(reinterpret_cast<char*>(&sample), sizeof(sample))) {
-            pcm16.push_back(sample);
+        while (pcm_file.read(reinterpret_cast<char*>(pcm24_data.data()), 3)) {
+            // Reconstruct 24-bit sample (little-endian)
+            int32_t sample = (pcm24_data[0] << 0) | (pcm24_data[1] << 8) | (pcm24_data[2] << 16);
+    
+            // Sign-extend to 32-bit
+            if (sample & 0x800000) {
+                sample |= 0xFF000000; // Fill upper 8 bits with 1s
+            }
+    
+            pcm24.push_back(sample);
         }
         
         pcm_file.close();
         
-        fprintf(stdout, "Read %zu samples from %s\n", pcm16.size(), pcm_filename.c_str());
+        fprintf(stdout, "Read %zu samples from %s\n", pcm24.size(), pcm_filename.c_str());
     
-        pcmf32.resize(pcm16.size());
+        pcmf32.resize(pcm24.size());
 
-        for (size_t i = 0; i < pcm16.size(); ++i) {
-            pcmf32[i] = pcm16[i] / 32768.0f;  // Normalize to [-1,1]
+        for (size_t i = 0; i < pcm24.size(); ++i) {
+            // Normalize to [-1, 1]
+            pcmf32[i] = static_cast<float>(pcm24[i]) / 8388608.0f;
         }
+
     }
 
     // Run the inference - stream.cpp
@@ -232,17 +244,14 @@ void translate(){
             return;
         }
 
-        // print result; - stream.cpp
+        // print result; - stream.cpp (DEBUGGING)
         {
-            printf("\r\33[2K");
-
             const int n_segments = whisper_full_n_segments(ctx);
             for (int i = 0; i < n_segments; ++i) {
                 const char * text = whisper_full_get_segment_text(ctx, i);
 
                 if (params.no_timestamps) {
                     printf("%s\n", text);
-                    fflush(stdout);
                 } else {
                     const int64_t t0 = whisper_full_get_segment_t0(ctx, i);
                     const int64_t t1 = whisper_full_get_segment_t1(ctx, i);
@@ -250,7 +259,6 @@ void translate(){
                     printf ("[%s --> %s]  %s\n", to_timestamp(t0).c_str(), to_timestamp(t1).c_str(), text);
                 }
             }
-            fflush(stdout); 
         }
     }
 
