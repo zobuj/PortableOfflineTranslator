@@ -9,6 +9,7 @@ find_package(Threads REQUIRED)
 
 # Add the Whisper library
 add_subdirectory(whisper.cpp)
+add_subdirectory(llama.cpp)
 
 # Add the new folder containing the main executable
 add_subdirectory(pipeline)
