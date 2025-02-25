@@ -7,6 +7,7 @@
 #include <fstream>
 #include <unistd.h>
 #include <time.h>
+#include <map>
 
 volatile bool start_translation = false;
 
@@ -16,22 +17,110 @@ void mcu_translate_signal_handler(int signum){
     }
 }
 
-//  500 -> 00:05.000
-// 6000 -> 01:00.000
-// To Timestamp Helper Function - stream.cpp
-std::string to_timestamp(int64_t t) {
-    int64_t sec = t/100;
-    int64_t msec = t - sec*100;
-    int64_t min = sec/60;
-    sec = sec - min*60;
+static const std::map<std::string, std::pair<int, std::string>> lang_map = {
+    { "English",        { 0,  "en" } },
+    { "Chinese",        { 1,  "zh" } },
+    { "German",         { 2,  "de" } },
+    { "Spanish",        { 3,  "es" } },
+    { "Russian",        { 4,  "ru" } },
+    { "Korean",         { 5,  "ko" } },
+    { "French",         { 6,  "fr" } },
+    { "Japanese",       { 7,  "ja" } },
+    { "Portuguese",     { 8,  "pt" } },
+    { "Turkish",        { 9,  "tr" } },
+    { "Polish",         { 10, "pl" } },
+    { "Catalan",        { 11, "ca" } },
+    { "Dutch",          { 12, "nl" } },
+    { "Arabic",         { 13, "ar" } },
+    { "Swedish",        { 14, "sv" } },
+    { "Italian",        { 15, "it" } },
+    { "Indonesian",     { 16, "id" } },
+    { "Hindi",          { 17, "hi" } },
+    { "Finnish",        { 18, "fi" } },
+    { "Vietnamese",     { 19, "vi" } },
+    { "Hebrew",         { 20, "he" } },
+    { "Ukrainian",      { 21, "uk" } },
+    { "Greek",          { 22, "el" } },
+    { "Malay",          { 23, "ms" } },
+    { "Czech",          { 24, "cs" } },
+    { "Romanian",       { 25, "ro" } },
+    { "Danish",         { 26, "da" } },
+    { "Hungarian",      { 27, "hu" } },
+    { "Tamil",          { 28, "ta" } },
+    { "Norwegian",      { 29, "no" } },
+    { "Thai",           { 30, "th" } },
+    { "Urdu",           { 31, "ur" } },
+    { "Croatian",       { 32, "hr" } },
+    { "Bulgarian",      { 33, "bg" } },
+    { "Lithuanian",     { 34, "lt" } },
+    { "Latin",          { 35, "la" } },
+    { "Maori",          { 36, "mi" } },
+    { "Malayalam",      { 37, "ml" } },
+    { "Welsh",          { 38, "cy" } },
+    { "Slovak",         { 39, "sk" } },
+    { "Telugu",         { 40, "te" } },
+    { "Persian",        { 41, "fa" } },
+    { "Latvian",        { 42, "lv" } },
+    { "Bengali",        { 43, "bn" } },
+    { "Serbian",        { 44, "sr" } },
+    { "Azerbaijani",    { 45, "az" } },
+    { "Slovenian",      { 46, "sl" } },
+    { "Kannada",        { 47, "kn" } },
+    { "Estonian",       { 48, "et" } },
+    { "Macedonian",     { 49, "mk" } },
+    { "Breton",         { 50, "br" } },
+    { "Basque",         { 51, "eu" } },
+    { "Icelandic",      { 52, "is" } },
+    { "Armenian",       { 53, "hy" } },
+    { "Nepali",         { 54, "ne" } },
+    { "Mongolian",      { 55, "mn" } },
+    { "Bosnian",        { 56, "bs" } },
+    { "Kazakh",         { 57, "kk" } },
+    { "Albanian",       { 58, "sq" } },
+    { "Swahili",        { 59, "sw" } },
+    { "Galician",       { 60, "gl" } },
+    { "Marathi",        { 61, "mr" } },
+    { "Punjabi",        { 62, "pa" } },
+    { "Sinhala",        { 63, "si" } },
+    { "Khmer",          { 64, "km" } },
+    { "Shona",          { 65, "sn" } },
+    { "Yoruba",         { 66, "yo" } },
+    { "Somali",         { 67, "so" } },
+    { "Afrikaans",      { 68, "af" } },
+    { "Occitan",        { 69, "oc" } },
+    { "Georgian",       { 70, "ka" } },
+    { "Belarusian",     { 71, "be" } },
+    { "Tajik",          { 72, "tg" } },
+    { "Sindhi",         { 73, "sd" } },
+    { "Gujarati",       { 74, "gu" } },
+    { "Amharic",        { 75, "am" } },
+    { "Yiddish",        { 76, "yi" } },
+    { "Lao",            { 77, "lo" } },
+    { "Uzbek",          { 78, "uz" } },
+    { "Faroese",        { 79, "fo" } },
+    { "Haitian Creole", { 80, "ht" } },
+    { "Pashto",         { 81, "ps" } },
+    { "Turkmen",        { 82, "tk" } },
+    { "Nynorsk",        { 83, "nn" } },
+    { "Maltese",        { 84, "mt" } },
+    { "Sanskrit",       { 85, "sa" } },
+    { "Luxembourgish",  { 86, "lb" } },
+    { "Myanmar",        { 87, "my" } },
+    { "Tibetan",        { 88, "bo" } },
+    { "Tagalog",        { 89, "tl" } },
+    { "Malagasy",       { 90, "mg" } },
+    { "Assamese",       { 91, "as" } },
+    { "Tatar",          { 92, "tt" } },
+    { "Hawaiian",       { 93, "haw" } },
+    { "Lingala",        { 94, "ln" } },
+    { "Hausa",          { 95, "ha" } },
+    { "Bashkir",        { 96, "ba" } },
+    { "Javanese",       { 97, "jw" } },
+    { "Sundanese",      { 98, "su" } },
+    { "Cantonese",      { 99, "yue" } },
+};
 
-    char buf[32];
-    snprintf(buf, sizeof(buf), "%02d:%02d.%03d", (int) min, (int) sec, (int) msec);
-
-    return std::string(buf);
-}
-
-// Command-line Parameters - stream.cpp
+// Whisper Parameters - stream.cpp
 struct whisper_params {
     int32_t n_threads  = std::min(4, (int32_t) std::thread::hardware_concurrency());
     int32_t step_ms    = 3000;
@@ -55,13 +144,16 @@ struct whisper_params {
     bool flash_attn    = false;
 
     std::string language  = "en";
-    std::string model     = "whisper.cpp/models/ggml-tiny.en.bin";
+    // std::string model     = "whisper.cpp/models/ggml-tiny.bin";
+    std::string model     = "whisper.cpp/models/ggml-large-v3-turbo.bin";
     std::string fname_out = "";
 };
 
-std::string transcribe(){
+std::string transcribe(std::string lang){
     
     whisper_params params;
+
+    params.language = lang;
 
     params.keep_ms   = std::min(params.keep_ms,   params.step_ms);
     params.length_ms = std::max(params.length_ms, params.step_ms);
@@ -126,7 +218,7 @@ std::string transcribe(){
 
     // Read PCM Data - Will need to change for I2C later
     {
-        std::string pcm_filename = "../pcm_generator/sample.pcm";
+        std::string pcm_filename = "../pcm_generator/input.pcm";
         std::ifstream pcm_file(pcm_filename, std::ios::binary);
         
         if (!pcm_file) {
@@ -204,7 +296,7 @@ std::string transcribe(){
     }
 }
 
-int translate(const std::string &text_in, std::string &text_out) {
+int translate(const std::string &text_in, std::string &text_out, std::string &dest_langauge) {
     // Escape double quotes inside the input text
     std::string escaped_text = text_in;
     size_t pos = 0;
@@ -216,7 +308,7 @@ int translate(const std::string &text_in, std::string &text_out) {
     // path to the model gguf file
     std::string model_path = "llama.cpp/models/mistral-7b.Q4_K_M.gguf";
     // prompt to generate text from
-    std::string prompt = "-p Translate the following text to Spanish: ' " + escaped_text + " ' --reverse-prompt Spanish:";
+    std::string prompt = "-p Translate the following text to " + dest_langauge + ": ' " + escaped_text + " ' --reverse-prompt " + dest_langauge + ":";
     // number of layers to offload to the GPU
     int ngl = 99;
     // number of tokens to predict
@@ -358,6 +450,15 @@ int translate(const std::string &text_in, std::string &text_out) {
     return 0;
 }
 
+void get_language_config(std::string & source_lang, std::string & dest_lang){
+    std::ifstream config("../pcm_generator/config.txt");
+    if (!config) {
+        std::cerr << "Error opening file" << std::endl;
+    }
+
+    config >> source_lang >> dest_lang;
+}
+
 
 int main(int argc, char ** argv){
     fprintf(stdout, "Starting Translation Pipeline...\n");
@@ -375,13 +476,43 @@ int main(int argc, char ** argv){
         
             clock_gettime(CLOCK_MONOTONIC, &start);
 
-            std::string transcribed_text = transcribe();
+            std::string source_language;
+            std::string dest_language;
+
+            get_language_config(source_language, dest_language);
+
+            fprintf(stdout, "Source Language: %s\n", source_language.c_str());
+            fprintf(stdout, "Destination Language: %s\n", dest_language.c_str());
+
+
+            if (lang_map.find(source_language) == lang_map.end()) {
+                fprintf(stderr, "Error: Source language '%s' not supported.\n", source_language.c_str());
+                start_translation = false;
+                continue;
+            }
+
+            if (lang_map.find(dest_language) == lang_map.end()) {
+                fprintf(stderr, "Error: Destination language '%s' not supported.\n", dest_language.c_str());
+                start_translation = false;
+                continue;
+            }
+
+            std::string transcribed_text = transcribe(lang_map.at(source_language).second);
             std::string translated_text;
-            translate(transcribed_text, translated_text);
+            translate(transcribed_text, translated_text, dest_language);
             
-            fprintf(stdout, "\nTranscribed text: \033[0;36m%s\033[0m\n\n", transcribed_text.c_str()); // Cyan
-            fprintf(stdout, "Translated text: \033[0;32m%s\033[0m\n\n", translated_text.c_str()); // Green
-            
+            fprintf(stdout, "\nTranscribed text (%s): \033[0;36m%s\033[0m\n\n", source_language.c_str(),transcribed_text.c_str()); // Cyan
+            fprintf(stdout, "Translated text (%s): \033[0;32m%s\033[0m\n\n", dest_language.c_str(), translated_text.c_str()); // Green
+
+            // Output the translated text to a file
+            std::ofstream output_file("../pcm_generator/translated_text.txt");
+            if (!output_file) {
+                fprintf(stderr, "Error: Unable to open output file for writing.\n");
+            } else {
+                output_file << translated_text;
+                output_file.close();
+                fprintf(stdout, "Translated text has been written to ../pcm_generator/translated_text.txt\n");
+            }
 
 
             clock_gettime(CLOCK_MONOTONIC, &end);
