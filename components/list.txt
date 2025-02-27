@@ -1,0 +1,2 @@
+MCU - STM32F407IEH6 (https://estore.st.com/en/stm32f407ieh6-cpn.html)
+I2S Microphone - ICS-43434 (https://www.digikey.com/en/products/detail/tdk-invensense/ICS-43434/6140298)

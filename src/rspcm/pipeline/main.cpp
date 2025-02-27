@@ -8,14 +8,10 @@
 #include <unistd.h>
 #include <time.h>
 #include <map>
+#include <sys/socket.h>
+#include <sys/un.h>
 
-volatile bool start_translation = false;
-
-void mcu_translate_signal_handler(int signum){
-    if(signum == SIGUSR1) {
-        start_translation = true;
-    }
-}
+#define SOCKET_PATH "/tmp/translate_socket"
 
 static const std::map<std::string, std::pair<int, std::string>> lang_map = {
     { "English",        { 0,  "en" } },
@@ -173,7 +169,7 @@ std::string transcribe(std::string lang){
 
     // whisper init
     if (params.language != "auto" && whisper_lang_id(params.language.c_str()) == -1){
-        fprintf(stderr, "error: unknown language '%s'\n", params.language.c_str());
+        fprintf(stderr, "Error: unknown language '%s'\n", params.language.c_str());
         exit(0);
     }
 
@@ -327,7 +323,7 @@ int translate(const std::string &text_in, std::string &text_out, std::string &de
     const llama_vocab * vocab = llama_model_get_vocab(model);
 
     if (model == NULL) {
-        fprintf(stderr , "%s: error: unable to load model\n" , __func__);
+        fprintf(stderr , "%s: Error: unable to load model\n" , __func__);
         return 1;
     }
 
@@ -339,7 +335,7 @@ int translate(const std::string &text_in, std::string &text_out, std::string &de
     // allocate space for the tokens and tokenize the prompt
     std::vector<llama_token> prompt_tokens(n_prompt);
     if (llama_tokenize(vocab, prompt.c_str(), prompt.size(), prompt_tokens.data(), prompt_tokens.size(), true, true) < 0) {
-        fprintf(stderr, "%s: error: failed to tokenize the prompt\n", __func__);
+        fprintf(stderr, "%s: Error: failed to tokenize the prompt\n", __func__);
         return 1;
     }
 
@@ -356,7 +352,7 @@ int translate(const std::string &text_in, std::string &text_out, std::string &de
     llama_context * ctx = llama_init_from_model(model, ctx_params);
 
     if (ctx == NULL) {
-        fprintf(stderr , "%s: error: failed to create the llama_context\n" , __func__);
+        fprintf(stderr , "%s: Error: failed to create the llama_context\n" , __func__);
         return 1;
     }
 
@@ -374,7 +370,7 @@ int translate(const std::string &text_in, std::string &text_out, std::string &de
         char buf[128];
         int n = llama_token_to_piece(vocab, id, buf, sizeof(buf), 0, true);
         if (n < 0) {
-            fprintf(stderr, "%s: error: failed to convert token to piece\n", __func__);
+            fprintf(stderr, "%s: Error: failed to convert token to piece\n", __func__);
             return 1;
         }
         std::string s(buf, n);
@@ -414,7 +410,7 @@ int translate(const std::string &text_in, std::string &text_out, std::string &de
             char buf[128];
             int n = llama_token_to_piece(vocab, new_token_id, buf, sizeof(buf), 0, true);
             if (n < 0) {
-                fprintf(stderr, "%s: error: failed to convert token to piece\n", __func__);
+                fprintf(stderr, "%s: Error: failed to convert token to piece\n", __func__);
                 return 1;
             }
         
@@ -462,68 +458,137 @@ void get_language_config(std::string & source_lang, std::string & dest_lang){
 
 int main(int argc, char ** argv){
     fprintf(stdout, "Starting Translation Pipeline...\n");
-    signal(SIGUSR1, mcu_translate_signal_handler);
+
+    int server_sock, client_sock;
+    struct sockaddr_un addr;
+    socklen_t addr_size;
+    uint8_t buffer[256]; // Not enough
+    uint8_t response[1];
+
+    unlink(SOCKET_PATH);
+    server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    if(server_sock == -1) {
+        perror("Failed to form server socket.");
+        return 1;
+    }
+
+    addr.sun_family = AF_UNIX;
+    strcpy(addr.sun_path, SOCKET_PATH);
+
+    if (bind(server_sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+        perror("Failed to bind to server socket.");
+        return 1;
+    }
+
+    listen(server_sock, 1);
+
     while(1){
-        fprintf(stdout, "Waiting for translation request (send SIGUSR1 to PID %d)...\n", getpid());
+        fprintf(stdout, "Waiting for translation request from MCU...\n");
         fprintf(stdout, "Press Ctrl+C to exit.\n");
-        pause();
-        if(start_translation) {
 
-            struct timespec start, end;
-            double elapsed_time;
-        
-            fprintf(stdout, "Processing Translation Request...\n");
-        
-            clock_gettime(CLOCK_MONOTONIC, &start);
-
-            std::string source_language;
-            std::string dest_language;
-
-            get_language_config(source_language, dest_language);
-
-            fprintf(stdout, "Source Language: %s\n", source_language.c_str());
-            fprintf(stdout, "Destination Language: %s\n", dest_language.c_str());
-
-
-            if (lang_map.find(source_language) == lang_map.end()) {
-                fprintf(stderr, "Error: Source language '%s' not supported.\n", source_language.c_str());
-                start_translation = false;
-                continue;
-            }
-
-            if (lang_map.find(dest_language) == lang_map.end()) {
-                fprintf(stderr, "Error: Destination language '%s' not supported.\n", dest_language.c_str());
-                start_translation = false;
-                continue;
-            }
-
-            std::string transcribed_text = transcribe(lang_map.at(source_language).second);
-            std::string translated_text;
-            translate(transcribed_text, translated_text, dest_language);
-            
-            fprintf(stdout, "\nTranscribed text (%s): \033[0;36m%s\033[0m\n\n", source_language.c_str(),transcribed_text.c_str()); // Cyan
-            fprintf(stdout, "Translated text (%s): \033[0;32m%s\033[0m\n\n", dest_language.c_str(), translated_text.c_str()); // Green
-
-            // Output the translated text to a file
-            std::ofstream output_file("../pcm_generator/translated_text.txt");
-            if (!output_file) {
-                fprintf(stderr, "Error: Unable to open output file for writing.\n");
-            } else {
-                output_file << translated_text;
-                output_file.close();
-                fprintf(stdout, "Translated text has been written to ../pcm_generator/translated_text.txt\n");
-            }
-
-
-            clock_gettime(CLOCK_MONOTONIC, &end);
-
-            elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-        
-            fprintf(stdout, "Translation complete. Time taken: %.6f seconds.\n", elapsed_time);
-            fprintf(stdout, "Returning to idle state.\n");
-
-            start_translation = false;
+        client_sock = accept(server_sock, NULL, NULL);
+        if (client_sock == -1) {
+            perror("Failed to accept from server socket.");
+            return 1;
         }
+    
+        // Recieve Start Sequence
+        recv(client_sock, buffer, sizeof(buffer), 0);
+        
+        // Start Timing Transaction
+        struct timespec start, end;
+        double elapsed_time;
+    
+        fprintf(stdout, "Processing Translation Request...\n");
+    
+        clock_gettime(CLOCK_MONOTONIC, &start);
+
+        if(buffer[0] != 0xFF) {
+            // Invalid Start Condition
+            fprintf(stderr, "Error: Invalid Start Condition - 0x%x.\n", buffer[0]);
+
+            response[0] = 0x00;
+            send(client_sock, response, sizeof(response), 0);
+
+            continue;
+        }
+
+        response[0] = 0xFF;
+        send(client_sock, response, sizeof(response), 0); // ACK Start Condition
+
+        std::string source_language;
+        std::string dest_language;
+
+        // Recieve Source Language
+        recv(client_sock, buffer, sizeof(buffer), 0);
+
+        // Parse through the buffer until the escape character (0xFF) is found
+        for (size_t i = 0; i < sizeof(buffer); ++i) {
+            if (buffer[i] == 0x00) {
+                break;
+            }
+            source_language += buffer[i];
+        }
+
+        if (lang_map.find(source_language) == lang_map.end()) {
+            // Invalid Source Language
+            fprintf(stderr, "Error: Source language '%s' not supported.\n", source_language.c_str());
+            continue;
+        }
+
+        response[0] = 0xFF;
+        send(client_sock, response, sizeof(response), 0); // ACK Source Language
+
+        // Recieve Destination Language
+        recv(client_sock, buffer, sizeof(buffer), 0);
+
+        // Parse through the buffer until the escape character (0xFF) is found
+        for (size_t i = 0; i < sizeof(buffer); ++i) {
+            if (buffer[i] == 0x00) {
+                break;
+            }
+            dest_language += buffer[i];
+        }
+
+        if (lang_map.find(dest_language) == lang_map.end()) {
+            // Invalid Destination Language
+            fprintf(stderr, "Error: Destination language '%s' not supported.\n", dest_language.c_str());
+            continue;
+        }
+
+        response[0] = 0xFF;
+        send(client_sock, response, sizeof(response), 0); // ACK Destination Language
+
+        fprintf(stdout, "Source Language: %s\n", source_language.c_str());
+        fprintf(stdout, "Destination Language: %s\n", dest_language.c_str());
+
+        std::string transcribed_text = transcribe(lang_map.at(source_language).second); //whisper
+        std::string translated_text;
+        translate(transcribed_text, translated_text, dest_language); //llama
+        
+        fprintf(stdout, "\nTranscribed text (%s): \033[0;36m%s\033[0m\n\n", source_language.c_str(),transcribed_text.c_str()); // Cyan
+        fprintf(stdout, "Translated text (%s): \033[0;32m%s\033[0m\n\n", dest_language.c_str(), translated_text.c_str()); // Green
+
+        // Output the translated text to a file
+        std::ofstream output_file("../pcm_generator/translated_text.txt"); // mozilla
+        if (!output_file) {
+            fprintf(stderr, "Error: Unable to open output file for writing.\n");
+        } else {
+            output_file << translated_text;
+            output_file.close();
+            fprintf(stdout, "Translated text has been written to ../pcm_generator/translated_text.txt\n");
+        }
+
+
+        clock_gettime(CLOCK_MONOTONIC, &end);
+
+        elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+    
+        close(client_sock);
+
+        fprintf(stdout, "Translation complete. Time taken: %.6f seconds.\n", elapsed_time);
+        fprintf(stdout, "Returning to idle state.\n");
+
     }
 
     return 0;
