@@ -414,6 +414,18 @@
     [
       "3d704ee5-6eca-4053-a2d3-eb3b94389f6b",
       ""
+    ],
+    [
+      "b5a94dc7-6eec-4769-89a6-3fb98e9e1189",
+      "IO Circuits"
+    ],
+    [
+      "ca538113-3778-402c-9715-fa2cdbc18d36",
+      "MCU"
+    ],
+    [
+      "412e5eb2-b89d-469e-9cc9-2a7d009d40ae",
+      "PowerSS"
     ]
   ],
   "text_variables": {}
