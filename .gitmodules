@@ -10,3 +10,6 @@
 [submodule "src/rspcm/ggml"]
 	path = src/rspcm/ggml
 	url = https://github.com/ggml-org/ggml
+[submodule "src/rspcm/flash/usbboot"]
+	path = src/rspcm/flash/usbboot
+	url = https://github.com/raspberrypi/usbboot

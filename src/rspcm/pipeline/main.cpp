@@ -524,6 +524,7 @@ int main(int argc, char ** argv){
 
         // Parse through the buffer until the escape character (0xFF) is found
         for (size_t i = 0; i < sizeof(buffer); ++i) {
+            fprintf(stdout, "Buffer[%zu]: 0x%x (%c)\n", i, buffer[i], buffer[i]);         
             if (buffer[i] == 0x00) {
                 break;
             }
@@ -544,6 +545,7 @@ int main(int argc, char ** argv){
 
         // Parse through the buffer until the escape character (0xFF) is found
         for (size_t i = 0; i < sizeof(buffer); ++i) {
+            fprintf(stdout, "Buffer[%zu]: 0x%x (%c)\n", i, buffer[i], buffer[i]);            
             if (buffer[i] == 0x00) {
                 break;
             }
