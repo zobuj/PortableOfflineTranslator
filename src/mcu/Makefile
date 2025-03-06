@@ -5,7 +5,7 @@ CC = gcc
 MAIN_SRC = main.c
 
 # Define the output executables
-MAIN_OUT = main
+MAIN_OUT = mcu
 
 # Define the build targets
 all: $(MAIN_OUT)

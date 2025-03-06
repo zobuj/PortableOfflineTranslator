@@ -47,17 +47,17 @@ void get_language_config(char *source_lang, char *dest_lang) {
     fclose(file);
 }
 
-void HAL_I2C_Transmit(int sock, uint8_t DevAddress, uint8_t *pData, uint16_t Size) {
+void HAL_I2C_Transmit(int sock_fd, uint8_t DevAddress, uint8_t *pData, uint16_t Size) {
     uint8_t buffer[256];
     // buffer[0] = DevAddress; // First byte = Device address
     memcpy(&buffer[0], pData, Size);
 
-    send(sock, buffer, Size + 1, 0);
+    send(sock_fd, buffer, Size + 1, 0);
     printf("MCU: Sent data to I2C device 0x%X\n", DevAddress);
 }
 
-void HAL_I2C_Receive(int sock, uint8_t *pData, uint16_t Size) {
-    recv(sock, pData, Size, 0);
+void HAL_I2C_Receive(int sock_fd, uint8_t *pData, uint16_t Size) {
+    recv(sock_fd, pData, Size, 0);
     printf("MCU: Received response from I2C device: ");
     for (int i = 0; i < Size; i++) {
         printf("0x%X ", pData[i]);
@@ -66,21 +66,21 @@ void HAL_I2C_Receive(int sock, uint8_t *pData, uint16_t Size) {
 }
 
 int main() {
-    int sock;
-    struct sockaddr_un addr;
-
-    sock = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (sock == -1) {
+    int sock_fd = socket(AF_UNIX, SOCK_STREAM, 0);;
+    if (sock_fd == -1) {
         perror("Socket creation failed!");
-        return 1;
+        return EXIT_FAILURE;
     }
-
+    
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strcpy(addr.sun_path, SOCKET_PATH);
+    strncpy(addr.sun_path, SOCKET_PATH, sizeof(addr.sun_path) - 1);
 
-    if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
-        perror("Connect error");
-        return 1;
+    if (connect(sock_fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+        perror("Connect to server failed!");
+        close(sock_fd);
+        return EXIT_FAILURE;
     }
 
     uint8_t start_translation_sequence[] = {0xFF};
@@ -96,27 +96,27 @@ int main() {
     uint8_t response[1];
 
     printf("MCU: Starting data transmission...\n");
-    HAL_I2C_Transmit(sock, RPI5_I2C, start_translation_sequence, sizeof(start_translation_sequence));  // Send Start Sequence
-    HAL_I2C_Receive(sock, response, sizeof(response)); // Receive response
+    HAL_I2C_Transmit(sock_fd, RPI5_I2C, start_translation_sequence, sizeof(start_translation_sequence));  // Send Start Sequence
+    HAL_I2C_Receive(sock_fd, response, sizeof(response)); // Receive response
     
-    if(response[0] != 0xFF) {close(sock); return 0;}
+    if(response[0] != 0xFF) {close(sock_fd); return 0;}
     printf("Raspberry Pi Acknowledged Start Sequence.\n");
     
-    HAL_I2C_Transmit(sock, RPI5_I2C, (uint8_t *)source_language, strlen(source_language)+1);  // Send Source Language
-    HAL_I2C_Receive(sock, response, sizeof(response)); // Receive Response
+    HAL_I2C_Transmit(sock_fd, RPI5_I2C, (uint8_t *)source_language, strlen(source_language)+1);  // Send Source Language
+    HAL_I2C_Receive(sock_fd, response, sizeof(response)); // Receive Response
     
-    if(response[0] != 0xFF) {close(sock); return 0;}
+    if(response[0] != 0xFF) {close(sock_fd); return 0;}
     printf("Raspberry Pi Acknowledged Source Language.\n");
     
-    HAL_I2C_Transmit(sock, RPI5_I2C, (uint8_t *)dest_language, strlen(dest_language)+1);  // Send Destination Language
-    HAL_I2C_Receive(sock, response, sizeof(response)); // Receive Response
+    HAL_I2C_Transmit(sock_fd, RPI5_I2C, (uint8_t *)dest_language, strlen(dest_language)+1);  // Send Destination Language
+    HAL_I2C_Receive(sock_fd, response, sizeof(response)); // Receive Response
     
-    if(response[0] != 0xFF) {close(sock); return 0;}
+    if(response[0] != 0xFF) {close(sock_fd); return 0;}
     printf("Raspberry Pi Acknowledged Destination Language.\n");
     
 
     
-    close(sock);
+    close(sock_fd);
     printf("MCU: Data transmission ended.\n");
 
     return 0;

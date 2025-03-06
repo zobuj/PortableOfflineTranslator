@@ -108,9 +108,9 @@ ffplay -nodisp -autoexit -f s24le -ar 24000 ../pcm_generator/input.pcm
 
 # Send signal to pipeline process
 pushd ../mcu
-make main
+make mcu
 popd
-../mcu/main
+../mcu/mcu
 
 sleep 5  # Allow pipeline process to process the signal
 

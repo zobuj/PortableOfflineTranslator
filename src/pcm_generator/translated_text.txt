@@ -1,1 +1,1 @@
- ' ¡Vete a la mierda!  '
+ '  Transcripción por CastingWords  ' --reverse-prompt

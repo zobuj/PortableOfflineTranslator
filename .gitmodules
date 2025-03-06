@@ -13,3 +13,7 @@
 [submodule "src/rspcm/flash/usbboot"]
 	path = src/rspcm/flash/usbboot
 	url = https://github.com/raspberrypi/usbboot
+[submodule "src/user_interface/clay"]
+	path = src/user_interface/clay
+	url = https://github.com/nicbarker/clay
+

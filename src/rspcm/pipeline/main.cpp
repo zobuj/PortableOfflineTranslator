@@ -13,6 +13,16 @@
 
 #define SOCKET_PATH "/tmp/translate_socket"
 
+int server_sock;
+
+void cleanup(int signum) {
+    fprintf(stdout, "Shutting down server...\n");
+    close(server_sock);
+    unlink(SOCKET_PATH); // Remove the UNIX socket file
+    exit(EXIT_SUCCESS);
+}
+
+
 static const std::map<std::string, std::pair<int, std::string>> lang_map = {
     { "English",        { 0,  "en" } },
     { "Chinese",        { 1,  "zh" } },
@@ -214,7 +224,8 @@ std::string transcribe(std::string lang){
 
     // Read PCM Data - Will need to change for I2C later
     {
-        std::string pcm_filename = "../pcm_generator/input.pcm";
+        // std::string pcm_filename = "../pcm_generator/input.pcm";
+        std::string pcm_filename = "../inmp441/output/microphone_output.pcm";
         std::ifstream pcm_file(pcm_filename, std::ios::binary);
         
         if (!pcm_file) {
@@ -457,30 +468,38 @@ void get_language_config(std::string & source_lang, std::string & dest_lang){
 
 
 int main(int argc, char ** argv){
+    signal(SIGINT, cleanup);  // Handle Ctrl+C (SIGINT)
+
     fprintf(stdout, "Starting Translation Pipeline...\n");
 
-    int server_sock, client_sock;
+    int client_sock;
     struct sockaddr_un addr;
-    socklen_t addr_size;
     uint8_t buffer[256]; // Not enough
     uint8_t response[1];
 
-    unlink(SOCKET_PATH);
+    unlink(SOCKET_PATH); // Remove previous socket if it exists
+
     server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if(server_sock == -1) {
         perror("Failed to form server socket.");
-        return 1;
+        return EXIT_FAILURE;
     }
 
+    memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strcpy(addr.sun_path, SOCKET_PATH);
+    strncpy(addr.sun_path, SOCKET_PATH, sizeof(addr.sun_path) - 1);
 
     if (bind(server_sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
         perror("Failed to bind to server socket.");
-        return 1;
+        close(server_sock);
+        return EXIT_FAILURE;
     }
 
-    listen(server_sock, 1);
+    if (listen(server_sock, 1) == -1) {
+        perror("Listening failed");
+        close(server_sock);
+        return EXIT_FAILURE;
+    }
 
     while(1){
         fprintf(stdout, "Waiting for translation request from MCU...\n");
@@ -489,7 +508,8 @@ int main(int argc, char ** argv){
         client_sock = accept(server_sock, NULL, NULL);
         if (client_sock == -1) {
             perror("Failed to accept from server socket.");
-            return 1;
+            close(server_sock);
+            return EXIT_FAILURE;
         }
     
         // Recieve Start Sequence
@@ -593,5 +613,7 @@ int main(int argc, char ** argv){
 
     }
 
+    close(server_sock);
+    unlink(SOCKET_PATH);
     return 0;
 }
