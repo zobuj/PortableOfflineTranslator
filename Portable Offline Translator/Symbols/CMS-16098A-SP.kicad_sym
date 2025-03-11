@@ -1,0 +1,89 @@
+
+(kicad_symbol_lib (version 20211014) (generator kicad_symbol_editor)
+  (symbol "CMS-16098A-SP" (pin_names (offset 1.016)) (in_bom yes) (on_board yes)
+    (property "Reference" "LS" (id 0) (at -3.81487 8.90137 0)
+      (effects (font (size 1.27 1.27)) (justify bottom left))
+    )
+    (property "Value" "CMS-16098A-SP" (id 1) (at -3.82519 -11.4755 0)
+      (effects (font (size 1.27 1.27)) (justify bottom left))
+    )
+    (property "Footprint" "CMS-16098A-SP:CUI_CMS-16098A-SP" (id 2) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "MF" "CUI" (id 4) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "DESCRIPTION" "16 x 9 mm, Rectangular Frame , 0.8 W, 8 Ohm, Neodymium Magnet, Mylar Cone" (id 5) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "PACKAGE" "CUI" (id 6) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "PRICE" "1.52 USD" (id 7) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "MP" "CMS-16098A-SP" (id 8) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "AVAILABILITY" "Warning" (id 9) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (symbol "CMS-16098A-SP_0_0"
+      (polyline
+        (pts (xy -0.635 1.27) (xy 0.0 1.27)) (stroke (width 0.254))
+      )
+      (polyline
+        (pts (xy 0.0 1.27) (xy 0.635 1.27)) (stroke (width 0.254))
+      )
+      (polyline
+        (pts (xy 0.635 1.27) (xy 0.635 -1.27)) (stroke (width 0.254))
+      )
+      (polyline
+        (pts (xy 0.635 -1.27) (xy 0.0 -1.27)) (stroke (width 0.254))
+      )
+      (polyline
+        (pts (xy 0.0 -1.27) (xy -0.635 -1.27)) (stroke (width 0.254))
+      )
+      (polyline
+        (pts (xy -0.635 -1.27) (xy -0.635 1.27)) (stroke (width 0.254))
+      )
+      (polyline
+        (pts (xy 0.635 1.27) (xy 1.905 3.175)) (stroke (width 0.254))
+      )
+      (polyline
+        (pts (xy 1.905 3.175) (xy 1.905 -3.175)) (stroke (width 0.254))
+      )
+      (polyline
+        (pts (xy 1.905 -3.175) (xy 0.635 -1.27)) (stroke (width 0.254))
+      )
+      (polyline
+        (pts (xy 0.0 1.27) (xy 0.0 2.54)) (stroke (width 0.254))
+      )
+      (polyline
+        (pts (xy 0.0 -1.27) (xy 0.0 -2.54)) (stroke (width 0.254))
+      )
+      (text "+" (at -1.91156 1.27436 0)
+        (effects (font (size 1.78411 1.78411)) (justify bottom left))
+      )
+      (text "-" (at -1.9061 -3.17684 0)
+        (effects (font (size 1.77903 1.77903)) (justify bottom left))
+      )
+      (pin passive line (at 0.0 5.08 270.0) (length 2.54)
+        (name "~"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "P"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin passive line (at 0.0 -5.08 90.0) (length 2.54)
+        (name "~"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "N"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+    )
+  )
+)
