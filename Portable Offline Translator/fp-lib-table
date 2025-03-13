@@ -1,3 +1,5 @@
 (fp_lib_table
+  (version 7)
   (lib (name "ICS_43434")(type "KiCad")(uri "/Users/joshuacudia/Downloads/ICS_43434")(options "")(descr ""))
+  (lib (name "MAX98357AETE_T")(type "KiCad")(uri "${KIPRJMOD}/Symbols/MAX98357AETE_T")(options "")(descr ""))
 )
