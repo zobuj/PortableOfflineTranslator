@@ -11,7 +11,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#define SOCKET_PATH "/tmp/translate_socket"
+#define SOCKET_PATH "/tmp/translate_socket1"
 
 int server_sock;
 
@@ -224,8 +224,8 @@ std::string transcribe(std::string lang){
 
     // Read PCM Data - Will need to change for I2C later
     {
-        // std::string pcm_filename = "../pcm_generator/input.pcm";
-        std::string pcm_filename = "../inmp441/output/microphone_output.pcm";
+        std::string pcm_filename = "../pcm_generator/input.pcm";
+        // std::string pcm_filename = "../inmp441/output/microphone_output.pcm";
         std::ifstream pcm_file(pcm_filename, std::ios::binary);
         
         if (!pcm_file) {

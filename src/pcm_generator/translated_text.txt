@@ -1,1 +1,1 @@
- '  Transcripción por CastingWords  ' --reverse-prompt
+ ¿Qué día es hoy?

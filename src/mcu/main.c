@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#define SOCKET_PATH "/tmp/translate_socket"
+#define SOCKET_PATH "/tmp/translate_socket1"
 #define RPI5_I2C 0x00
 
 void get_language_config(char *source_lang, char *dest_lang) {
