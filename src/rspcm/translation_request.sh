@@ -93,55 +93,66 @@ fi
 source "$PCM_VENV_PATH"
 
 # Run the PCM generation script
-python3 ../pcm_generator/generate_pcm_data.py \
+python3 ../pcm_generator/generate_pcm_data_rspi.py \
     --text "$TEXT" \
-    --mp3 ../pcm_generator/input.mp3 \
-    --wav ../pcm_generator/input.wav \
-    --pcm ../pcm_generator/input.pcm \
+    --mp3 ../pcm_generator/input/input.mp3 \
+    --wav ../pcm_generator/input/input.wav \
+    --pcm ../pcm_generator/input/input.pcm \
     --slang "$SLANG" \
     --dlang "$DLANG"
 
 deactivate  # Deactivate PCM virtual environment
 
-# Play the PCM file
-ffplay -nodisp -autoexit -f s24le -ar 24000 ../pcm_generator/input.pcm
+# # Play the PCM file
+# ffplay -nodisp -autoexit -f s24le -ar 24000 ../pcm_generator/input.pcm
 
 # Send signal to pipeline process
 pushd ../mcu
+make clean
 make mcu
 popd
 ../mcu/mcu
 
-sleep 5  # Allow pipeline process to process the signal
+sleep 90  # Allow pipeline process to process the signal
 
-# Activate Python virtual environment for TTS
-SPEAKER_VENV_PATH="../speaker/venv/bin/activate"
-if [[ ! -f "$SPEAKER_VENV_PATH" ]]; then
-    echo "Error: Python virtual environment not found at $SPEAKER_VENV_PATH"
-    exit 1
-fi
+# # Activate Python virtual environment for TTS
+# SPEAKER_VENV_PATH="../speaker/venv/bin/activate"
+# if [[ ! -f "$SPEAKER_VENV_PATH" ]]; then
+#     echo "Error: Python virtual environment not found at $SPEAKER_VENV_PATH"
+#     exit 1
+# fi
 
-source "$SPEAKER_VENV_PATH"
+# source "$SPEAKER_VENV_PATH"
+
+pushd piper/
 
 # Ensure translated text file exists
-TRANSLATED_TEXT_PATH="../pcm_generator/translated_text.txt"
+TRANSLATED_TEXT_PATH="../../pcm_generator/output/translated_text.txt"
 if [[ ! -f "$TRANSLATED_TEXT_PATH" ]]; then
     echo "Error: Translated text file not found at $TRANSLATED_TEXT_PATH"
     deactivate
     exit 1
 fi
 
-# Run TTS with the correct model
-tts --text "$(cat "$TRANSLATED_TEXT_PATH")" --model_name "$TTS_MODEL" --out_path ../pcm_generator/output.wav
-# Remove the trimmed output file if it exists
-TRIMMED_OUTPUT_PATH="../pcm_generator/trimmed_output.wav"
-if [[ -f "$TRIMMED_OUTPUT_PATH" ]]; then
-    rm "$TRIMMED_OUTPUT_PATH"
-fi
-ffmpeg -i ../pcm_generator/output.wav -af silenceremove=stop_periods=1:stop_duration=0.5:stop_threshold=-40dB ../pcm_generator/trimmed_output.wav
+# # Run TTS with the correct model
+# tts --text "$(cat "$TRANSLATED_TEXT_PATH")" --model_name "$TTS_MODEL" --out_path ../pcm_generator/output.wav
+# # Remove the trimmed output file if it exists
+# TRIMMED_OUTPUT_PATH="../pcm_generator/trimmed_output.wav"
+# if [[ -f "$TRIMMED_OUTPUT_PATH" ]]; then
+#     rm "$TRIMMED_OUTPUT_PATH"
+# fi
+# ffmpeg -i ../pcm_generator/output.wav -af silenceremove=stop_periods=1:stop_duration=0.5:stop_threshold=-40dB ../pcm_generator/trimmed_output.wav
 
-play ../pcm_generator/trimmed_output.wav
+# play ../pcm_generator/trimmed_output.wav
 
-deactivate  # Deactivate speaker virtual environment
+# deactivate  # Deactivate speaker virtual environment
+
+# cat "$TRANSLATED_TEXT_PATH" | ./piper --model en_US-lessac-medium.onnx --output_file ../../pcm_generator/output/translated_output.wav
+# cat "$TRANSLATED_TEXT_PATH" | ./piper --model es_ES-carlfm-x_low.onnx --output_file ../../pcm_generator/output/translated_output.wav
+# cat "$TRANSLATED_TEXT_PATH" | ./piper --model it_IT-paola-medium.onnx --output_file ../../pcm_generator/output/translated_output.wav
+cat "$TRANSLATED_TEXT_PATH" | ./piper --model zh_CN-huayan-x_low.onnx --output_file ../../pcm_generator/output/translated_output.wav
+
+popd
+
 
 echo "Translation and speech synthesis completed successfully."

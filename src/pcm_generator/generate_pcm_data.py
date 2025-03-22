@@ -155,11 +155,11 @@ def main():
     # Parse arguments
     args = parser.parse_args()
 
-    # Generate speech and convert to WAV
-    text_to_speech(args.mp3, args.wav, args.text, args.slang)
+    # # Generate speech and convert to WAV
+    # text_to_speech(args.mp3, args.wav, args.text, args.slang)
 
-    # Extract PCM data from WAV
-    pcm_data = extract_pcm_from_wav(args.wav, args.pcm)
+    # # Extract PCM data from WAV
+    # pcm_data = extract_pcm_from_wav(args.wav, args.pcm)
 
     # Print the source and destination languages
     print(f"Source Language: {args.slang}")
