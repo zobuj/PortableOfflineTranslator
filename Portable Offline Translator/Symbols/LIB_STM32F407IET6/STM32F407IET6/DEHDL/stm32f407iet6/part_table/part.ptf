@@ -1,0 +1,11 @@
+FILE_TYPE = MULTI_PHYS_TABLE;
+
+PART 'STM32F407IET6'
+CLASS = IC
+{========================================================================================}
+:"MANUFACTURER_NAME", "MANUFACTURER_PART_NUMBER"= "PART_NUMBER", "JEDEC_TYPE", "PACK_TYPE", "MOUSER_PART_NUMBER", "MOUSER_PRICE/STOCK", "DESCRIPTION", "DATASHEET", "HEIGHT";
+{========================================================================================}
+ "STMicroelectronics", "STM32F407IET6" (!) = "", "QFP50P2600X2600X160-176N", "Quad Flat Packages", "511-STM32F407IET6", "https://www.mouser.co.uk/ProductDetail/STMicroelectronics/STM32F407IET6?qs=Z8%252BeY1k3TIJwlXfelATEbg%3D%3D", "STM32F407IET6, 32 bit ARM Cortex M4 MCU 168MHz 512 kB Flash, 192 + 4 kB RAM, 2xUSB CAN I2C 176-Pin LQFP", "http://www.st.com/web/en/resource/technical/document/datasheet/DM00037051.pdf", "1.6 mm"
+END_PART
+
+END.

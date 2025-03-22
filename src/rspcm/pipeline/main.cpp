@@ -3,6 +3,9 @@
 
 #include <thread>
 #include <string>
+#include <vector>
+#include <signal.h>
+#include <sstream>
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
@@ -224,8 +227,8 @@ std::string transcribe(std::string lang){
 
     // Read PCM Data - Will need to change for I2C later
     {
-        std::string pcm_filename = "../pcm_generator/input.pcm";
-        // std::string pcm_filename = "../inmp441/output/microphone_output.pcm";
+        // std::string pcm_filename = "../pcm_generator/input.pcm";
+        std::string pcm_filename = "../inmp441/output/microphone_output.pcm";
         std::ifstream pcm_file(pcm_filename, std::ios::binary);
         
         if (!pcm_file) {
@@ -592,7 +595,7 @@ int main(int argc, char ** argv){
         fprintf(stdout, "Translated text (%s): \033[0;32m%s\033[0m\n\n", dest_language.c_str(), translated_text.c_str()); // Green
 
         // Output the translated text to a file
-        std::ofstream output_file("../pcm_generator/translated_text.txt"); // mozilla
+        std::ofstream output_file("../pcm_generator/output/translated_text.txt"); // mozilla
         if (!output_file) {
             fprintf(stderr, "Error: Unable to open output file for writing.\n");
         } else {

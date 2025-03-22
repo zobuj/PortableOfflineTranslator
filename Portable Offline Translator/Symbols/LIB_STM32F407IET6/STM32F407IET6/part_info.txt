@@ -1,0 +1,9 @@
+Manufacturer=STMicroelectronics
+PartNumber=STM32F407IET6
+PartCategory=Integrated Circuit
+PackageCategory=Quad Flat Packages
+PinCount=176
+Version=2.1
+Released=2015-07-23 10:11:26
+Downloaded=2025-03-12 19:33:57
+3D=Y

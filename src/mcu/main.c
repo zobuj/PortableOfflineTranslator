@@ -5,6 +5,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdint.h>
 
 #define SOCKET_PATH "/tmp/translate_socket1"
 #define RPI5_I2C 0x00
