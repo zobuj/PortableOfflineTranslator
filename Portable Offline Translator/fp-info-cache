@@ -1,4 +1,4 @@
-24754570908820365
+24763283154425970
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -360,6 +360,13 @@ Battery
 Battery_Panasonic_CR3032-VCN_Vertical_CircularHoles
 Panasonic CR-3032/VCN battery, https://industrial.panasonic.com/cdbs/www-data/pdf2/AAA4000/AAA4000D508.PDF
 battery CR-3032 coin cell vertical
+0
+2
+2
+Battery Connector(JST-XH)
+JST_B2B-XH-A
+
+
 0
 2
 2
@@ -65925,6 +65932,20 @@ Yellow 5381 Series LED
 0
 2
 2
+MAX98357A
+QFN50P300X300X80-17N
+Max 21-0136_T1633-4
+Integrated Circuit
+0
+17
+17
+MAX98357AETE_T
+QFN50P300X300X80-17N
+
+
+0
+17
+17
 Module
 A20_OLINUXINO_LIME2
 A20 Olinuxino LIME2, 1.2GHz, 512-1024MB RAM, Micro-SD, NAND or eMMC, 1000Mbit Ethernet
@@ -91272,6 +91293,20 @@ rotary encoder illuminated switch vertical
 0
 9
 8
+SPH0645LM4H-B(Microphone)
+MIC_SPH0645LM4H-B
+
+
+0
+6
+6
+STM32f407IET6
+QFP50P2600X2600X160-176N
+LQFP176 24 x 24 x 1.4mm
+Integrated Circuit
+0
+176
+176
 Sensor
 ASAIR_AM2302_P2.54mm_Lead2.75mm_TabDown
 Temperature and humidity module, http://akizukidenshi.com/download/ds/aosong/AM2302.pdf

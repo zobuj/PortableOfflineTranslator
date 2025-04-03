@@ -876,7 +876,7 @@
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "33325da1-a568-495b-8100-c480ab5788c5")
+		(uuid "3406aa0f-e110-43bc-b52d-ad5c30c41b38")
 		(property "Reference" "#PWR0101"
 			(at 101.6 111.76 0)
 			(effects
@@ -922,7 +922,7 @@
 			)
 		)
 		(pin "1"
-			(uuid "71ce836b-bfa8-4b8e-85c0-747ac238fb8f")
+			(uuid "90441cd6-fa87-45ce-9b00-22949ad51b49")
 		)
 		(instances
 			(project ""
