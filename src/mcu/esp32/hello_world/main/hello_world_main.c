@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: CC0-1.0
  */
 
+
 #include <stdio.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
@@ -11,22 +12,23 @@
 #include "driver/i2s.h"
 #include "esp_log.h"
 
+// Microphone I2S Configuration
 #define I2S_SD   10
 #define I2S_WS   11
 #define I2S_SCK  12
 #define I2S_PORT I2S_NUM_0
 
-#define bufferCnt 10
-#define bufferLen 1024
-int16_t sBuffer[bufferLen];
+#define bufferCnt 10 // DMA Buffers
+#define bufferLen 1024 // DMA Buffer Size
+int16_t sBuffer[bufferLen]; // DMA Buffer - 32-bit size for 24-bit PCM Data
 
-static const char *TAG = "I2S_MIC";
+static const char *I2S_MIC_TAG = "I2S_MIC";
 
-void i2s_install() {
+void mic_task(void *arg) {
+    // I2S Driver Install
     const i2s_config_t i2s_config = {
         .mode = I2S_MODE_MASTER | I2S_MODE_RX,
-        // .sample_rate = 44100,
-        .sample_rate = 16000,
+        .sample_rate = 44100,
         .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
         .communication_format = I2S_COMM_FORMAT_I2S,
@@ -38,9 +40,8 @@ void i2s_install() {
         .fixed_mclk = 0
     };
     ESP_ERROR_CHECK(i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL));
-}
 
-void i2s_setpin() {
+    // I2S Set Pin
     const i2s_pin_config_t pin_config = {
         .bck_io_num = I2S_SCK,
         .ws_io_num = I2S_WS,
@@ -48,11 +49,8 @@ void i2s_setpin() {
         .data_in_num = I2S_SD
     };
     ESP_ERROR_CHECK(i2s_set_pin(I2S_PORT, &pin_config));
-}
 
-void mic_task(void *arg) {
-    i2s_install();
-    i2s_setpin();
+    // I2S Start
     i2s_start(I2S_PORT);
 
     size_t bytesIn = 0;
@@ -69,7 +67,7 @@ void mic_task(void *arg) {
             int average = sum / sample_count;
             printf("Average amplitude: %d\n", average);
         } else {
-            ESP_LOGE(TAG, "i2s_read failed: %s", esp_err_to_name(result));
+            ESP_LOGE(I2S_MIC_TAG, "i2s_read failed: %s", esp_err_to_name(result));
         }
 
         // Small delay between prints to prevent flooding
@@ -81,62 +79,164 @@ void app_main(void) {
     xTaskCreatePinnedToCore(mic_task, "mic_task", 10000, NULL, 1, NULL, 1);
 }
 
+ // #include <stdio.h>
+// #include <string.h>
+// #include "freertos/FreeRTOS.h"
+// #include "freertos/task.h"
+// #include "driver/i2s.h"
+// #include "esp_log.h"
+
+// #define I2S_SD   10
+// #define I2S_WS   11
+// #define I2S_SCK  12
+// #define I2S_PORT I2S_NUM_0
+
+// #define bufferCnt 10
+// #define bufferLen 1024
+// int16_t sBuffer[bufferLen];
+
+// static const char *TAG = "I2S_MIC";
+
+// void i2s_install() {
+//     const i2s_config_t i2s_config = {
+//         .mode = I2S_MODE_MASTER | I2S_MODE_RX,
+//         .sample_rate = 44100,
+//         .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
+//         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
+//         .communication_format = I2S_COMM_FORMAT_I2S,
+//         .intr_alloc_flags = 0,
+//         .dma_buf_count = bufferCnt,
+//         .dma_buf_len = bufferLen,
+//         .use_apll = false,
+//         .tx_desc_auto_clear = false,
+//         .fixed_mclk = 0
+//     };
+//     ESP_ERROR_CHECK(i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL));
+// }
+
+// void i2s_setpin() {
+//     const i2s_pin_config_t pin_config = {
+//         .bck_io_num = I2S_SCK,
+//         .ws_io_num = I2S_WS,
+//         .data_out_num = -1,
+//         .data_in_num = I2S_SD
+//     };
+//     ESP_ERROR_CHECK(i2s_set_pin(I2S_PORT, &pin_config));
+// }
+
+// void mic_task(void *arg) {
+//     i2s_install();
+//     i2s_setpin();
+//     i2s_start(I2S_PORT);
+
+//     size_t bytesIn = 0;
+//     while (1) {
+//         esp_err_t result = i2s_read(I2S_PORT, &sBuffer, bufferLen * sizeof(int16_t), &bytesIn, portMAX_DELAY);
+//         if (result == ESP_OK) {
+//             int sample_count = bytesIn / sizeof(int16_t);
+//             int64_t sum = 0;
+
+//             for (int i = 0; i < sample_count; i++) {
+//                 sum += abs(sBuffer[i]);
+//             }
+
+//             int average = sum / sample_count;
+//             printf("Average amplitude: %d\n", average);
+//         } else {
+//             ESP_LOGE(TAG, "i2s_read failed: %s", esp_err_to_name(result));
+//         }
+
+//         // Small delay between prints to prevent flooding
+//         vTaskDelay(100 / portTICK_PERIOD_MS);
+//     }
+// }
+
+// void app_main(void) {
+//     xTaskCreatePinnedToCore(mic_task, "mic_task", 10000, NULL, 1, NULL, 1);
+// }
 
 // #include <string.h>
-// #include "driver/spi_common.h"
-// #include "driver/spi_slave.h"
-// #include "driver/gpio.h"
 // #include "freertos/FreeRTOS.h"
 // #include "freertos/task.h"
 // #include "esp_log.h"
 
-// #define RCV_BUFFER_SIZE 32
-// #define SEND_BUFFER_SIZE 1024
-// #define SPI_HOST HSPI_HOST
+// #include "driver/spi_slave.h"
+// #include "driver/spi_common.h"
+// #include "driver/gpio.h"
 
-// static const char *TAG = "SPI_SLAVE";
+// #define TAG "SPI_SLAVE"
 
-// uint8_t audio_buffer[SEND_BUFFER_SIZE]; // This would come from your I2S mic
+// #define SPI_HOST       SPI3_HOST  // VSPI
+// #define DMA_CH         SPI_DMA_CH_AUTO
+// #define QUEUE_SIZE     3
+// #define TRANSFER_SIZE  1024       // bytes
 
-// void prepare_audio_chunk() {
-//     for (int i = 0; i < SEND_BUFFER_SIZE; ++i) {
-//         audio_buffer[i] = i & 0xFF;  // Dummy data for now
+// // GPIOs for SPI3 (VSPI)
+// #define PIN_NUM_MOSI   35
+// #define PIN_NUM_MISO   37
+// #define PIN_NUM_SCLK   36
+// #define PIN_NUM_CS     39
+
+
+// // Test buffer (replace with I2S audio data later)
+// static uint8_t tx_buffer[TRANSFER_SIZE];
+
+// // Prepare dummy data (counting pattern)
+// void fill_tx_buffer() {
+//     for (int i = 0; i < TRANSFER_SIZE; ++i) {
+//         tx_buffer[i] = i & 0xFF;
 //     }
+//     ESP_LOGI(TAG, "tx_buffer[0..3] = %02X %02X %02X %02X",
+//         tx_buffer[0], tx_buffer[1], tx_buffer[2], tx_buffer[3]);
+    
 // }
 
 // void spi_slave_task(void *arg) {
 //     esp_err_t ret;
-//     spi_slave_transaction_t t;
 
-//     spi_slave_interface_config_t spi_cfg = {
-//         .mode = 0,
-//         .spics_io_num = GPIO_NUM_5,
-//         .queue_size = 3,
-//         .flags = 0,
-//     };
-
+//     // Configure SPI bus
 //     spi_bus_config_t bus_cfg = {
-//         .mosi_io_num = GPIO_NUM_23,
-//         .miso_io_num = GPIO_NUM_19,
-//         .sclk_io_num = GPIO_NUM_18,
+//         .mosi_io_num = PIN_NUM_MOSI,
+//         .miso_io_num = PIN_NUM_MISO,
+//         .sclk_io_num = PIN_NUM_SCLK,
 //         .quadwp_io_num = -1,
 //         .quadhd_io_num = -1
 //     };
 
-//     ret = spi_slave_initialize(SPI_HOST, &bus_cfg, &spi_cfg, SPI_DMA_CH_AUTO);
-//     assert(ret == ESP_OK);
+//     // Configure SPI slave interface
+//     spi_slave_interface_config_t slave_cfg = {
+//         .spics_io_num = PIN_NUM_CS,
+//         .flags = 0,
+//         .queue_size = QUEUE_SIZE,
+//         .mode = 0,
+//     };
 
-//     prepare_audio_chunk();
+//     ESP_LOGI(TAG, "Initializing SPI slave...");
+
+//     ret = spi_slave_initialize(SPI_HOST, &bus_cfg, &slave_cfg, DMA_CH);
+//     if (ret != ESP_OK) {
+//         ESP_LOGE(TAG, "Failed to init SPI slave: %s", esp_err_to_name(ret));
+//         vTaskDelete(NULL);
+//     }
+
+//     ESP_LOGI(TAG, "SPI slave initialized. Ready to transmit data.");
 
 //     while (1) {
-//         memset(&t, 0, sizeof(t));
-//         t.length = SEND_BUFFER_SIZE * 8;
-//         t.tx_buffer = audio_buffer;
+//         spi_slave_transaction_t trans = {
+//             .length = TRANSFER_SIZE * 8,  // in bits
+//             .tx_buffer = tx_buffer,
+//             .rx_buffer = NULL
+//         };
 
-//         ESP_LOGI(TAG, "Waiting for master to read...");
-//         ret = spi_slave_transmit(SPI_HOST, &t, portMAX_DELAY);
-//         if (ret == ESP_OK) {
-//             ESP_LOGI(TAG, "Chunk sent");
+//         // Fill test data each time (optional)
+//         fill_tx_buffer();
+
+//         // Wait for master to initiate transfer
+//         ret = spi_slave_transmit(SPI_HOST, &trans, portMAX_DELAY);
+//         if (ret != ESP_OK) {
+//             ESP_LOGE(TAG, "SPI transfer error: %s", esp_err_to_name(ret));
+//         } else {
+//             ESP_LOGI(TAG, "Sent %d bytes to master", TRANSFER_SIZE);
 //         }
 //     }
 // }
