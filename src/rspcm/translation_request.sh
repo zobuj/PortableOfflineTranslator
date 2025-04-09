@@ -83,28 +83,33 @@ fi
 
 echo "Triggering translation pipeline: \"$TEXT\" (From: \"$SLANG\" To: \"$DLANG\")"
 
-# Activate Python virtual environment for PCM generation
-PCM_VENV_PATH="../pcm_generator/venv/bin/activate"
-if [[ ! -f "$PCM_VENV_PATH" ]]; then
-    echo "Error: Python virtual environment not found at $PCM_VENV_PATH"
-    exit 1
-fi
+# # Activate Python virtual environment for PCM generation
+# PCM_VENV_PATH="../pcm_generator/venv/bin/activate"
+# if [[ ! -f "$PCM_VENV_PATH" ]]; then
+#     echo "Error: Python virtual environment not found at $PCM_VENV_PATH"
+#     exit 1
+# fi
 
-source "$PCM_VENV_PATH"
+# source "$PCM_VENV_PATH"
 
-# Run the PCM generation script
-python3 ../pcm_generator/generate_pcm_data_rspi.py \
-    --text "$TEXT" \
-    --mp3 ../pcm_generator/input/input.mp3 \
-    --wav ../pcm_generator/input/input.wav \
-    --pcm ../pcm_generator/input/input.pcm \
-    --slang "$SLANG" \
-    --dlang "$DLANG"
+# # Run the PCM generation script
+# python3 ../pcm_generator/generate_pcm_data_rspi.py \
+#     --text "$TEXT" \
+#     --mp3 ../pcm_generator/input/input.mp3 \
+#     --wav ../pcm_generator/input/input.wav \
+#     --pcm ../pcm_generator/input/input.pcm \
+#     --slang "$SLANG" \
+#     --dlang "$DLANG"
 
-deactivate  # Deactivate PCM virtual environment
+# deactivate  # Deactivate PCM virtual environment
 
 # # Play the PCM file
 # ffplay -nodisp -autoexit -f s24le -ar 24000 ../pcm_generator/input.pcm
+
+pushd ../spi_interface
+python3 main.py
+ffmpeg -i recording_input.wav -f s16le -acodec pcm_s16le -ac 1 -ar 16000 recording_output.pcm
+popd
 
 # Send signal to pipeline process
 pushd ../mcu
