@@ -14,7 +14,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#define SOCKET_PATH "/tmp/translate_socket1"
+#define SOCKET_PATH "/tmp/translate_socket"
 
 int server_sock;
 
@@ -227,8 +227,10 @@ std::string transcribe(std::string lang){
 
     // Read PCM Data - Will need to change for I2C later
     {
-        // std::string pcm_filename = "../pcm_generator/input.pcm";
-        std::string pcm_filename = "../inmp441/output/microphone_output.pcm";
+
+        // std::string pcm_filename = "../pcm_generator/input/input.pcm";
+        // std::string pcm_filename = "../inmp441/output/microphone_output.pcm";
+        std::string pcm_filename = "../spi_interface/recording_output.pcm";
         std::ifstream pcm_file(pcm_filename, std::ios::binary);
         
         if (!pcm_file) {
@@ -236,34 +238,52 @@ std::string transcribe(std::string lang){
             return "";
         }
         
-        std::vector<uint8_t> pcm24_data;
-        pcm24_data.resize(3);
+        // std::vector<uint8_t> pcm24_data;
+        // pcm24_data.resize(3);
 
-        std::vector<int32_t> pcm24;
+        // std::vector<int32_t> pcm24;
         
-        while (pcm_file.read(reinterpret_cast<char*>(pcm24_data.data()), 3)) {
-            // Reconstruct 24-bit sample (little-endian)
-            int32_t sample = (pcm24_data[0] << 0) | (pcm24_data[1] << 8) | (pcm24_data[2] << 16);
+        // while (pcm_file.read(reinterpret_cast<char*>(pcm24_data.data()), 3)) {
+        //     // Reconstruct 24-bit sample (little-endian)
+        //     int32_t sample = (pcm24_data[0] << 0) | (pcm24_data[1] << 8) | (pcm24_data[2] << 16);
     
-            // Sign-extend to 32-bit
-            if (sample & 0x800000) {
-                sample |= 0xFF000000; // Fill upper 8 bits with 1s
-            }
+        //     // Sign-extend to 32-bit
+        //     if (sample & 0x800000) {
+        //         sample |= 0xFF000000; // Fill upper 8 bits with 1s
+        //     }
     
-            pcm24.push_back(sample);
+        //     pcm24.push_back(sample);
+        // }
+        
+        // pcm_file.close();
+        
+        // fprintf(stdout, "Read %zu samples from %s\n", pcm24.size(), pcm_filename.c_str());
+    
+        // pcmf32.resize(pcm24.size());
+
+        // for (size_t i = 0; i < pcm24.size(); ++i) {
+        //     // Normalize to [-1, 1]
+        //     pcmf32[i] = static_cast<float>(pcm24[i]) / 8388608.0f;
+        // }
+
+
+        std::vector<int16_t> pcm16;
+        int16_t sample;
+    
+        while (pcm_file.read(reinterpret_cast<char*>(&sample), sizeof(int16_t))) {
+            pcm16.push_back(sample);
         }
-        
+    
         pcm_file.close();
-        
-        fprintf(stdout, "Read %zu samples from %s\n", pcm24.size(), pcm_filename.c_str());
     
-        pcmf32.resize(pcm24.size());
-
-        for (size_t i = 0; i < pcm24.size(); ++i) {
+        fprintf(stdout, "Read %zu samples from %s\n", pcm16.size(), pcm_filename.c_str());
+    
+        pcmf32.resize(pcm16.size());
+    
+        for (size_t i = 0; i < pcm16.size(); ++i) {
             // Normalize to [-1, 1]
-            pcmf32[i] = static_cast<float>(pcm24[i]) / 8388608.0f;
+            pcmf32[i] = static_cast<float>(pcm16[i]) / 32768.0f;
         }
-
     }
 
     // Run the inference - stream.cpp
