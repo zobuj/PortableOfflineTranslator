@@ -4,12 +4,14 @@
  * SPDX-License-Identifier: CC0-1.0
  */
 
-
 #include <stdio.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/i2s.h"
+#include "driver/spi_slave.h"
+#include "driver/spi_common.h"
+#include "driver/gpio.h"
 #include "esp_log.h"
 
 // Microphone I2S Configuration
@@ -18,17 +20,37 @@
 #define I2S_SCK  12
 #define I2S_PORT I2S_NUM_0
 
-#define bufferCnt 10 // DMA Buffers
+#define bufferCnt 16 // DMA Buffers
 #define bufferLen 1024 // DMA Buffer Size
 int16_t sBuffer[bufferLen]; // DMA Buffer - 32-bit size for 24-bit PCM Data
+int16_t circular_buffer[bufferCnt * bufferLen];
+volatile int write_index = 0;
+volatile int read_index = 0;
 
+// SPI Transfer Configuration
+#define PIN_NUM_MOSI   35
+#define PIN_NUM_MISO   37
+#define PIN_NUM_SCLK   36
+#define PIN_NUM_CS     39
+
+#define SPI_HOST       SPI3_HOST  // VSPI
+#define DMA_CH         SPI_DMA_CH_AUTO
+#define QUEUE_SIZE     3
+#define TRANSFER_SIZE  1024       // bytes
+
+// GPIO Interrupt Pin
+#define INT_GPIO GPIO_NUM_4
+
+// TAGS
 static const char *I2S_MIC_TAG = "I2S_MIC";
+static const char *SPI_TRANSFER_TAG = "SPI_SLAVE";
 
-void mic_task(void *arg) {
+void mic_setup() {
     // I2S Driver Install
     const i2s_config_t i2s_config = {
         .mode = I2S_MODE_MASTER | I2S_MODE_RX,
         .sample_rate = 44100,
+        // .sample_rate = 16000,
         .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
         .communication_format = I2S_COMM_FORMAT_I2S,
@@ -52,108 +74,125 @@ void mic_task(void *arg) {
 
     // I2S Start
     i2s_start(I2S_PORT);
+}
+
+void trigger_transfer_interrupt() {
+    gpio_set_level(INT_GPIO, 1);
+    vTaskDelay(pdMS_TO_TICKS(10)); // short pulse
+    gpio_set_level(INT_GPIO, 0);
+}
+
+void spi_interrupt_pin_setup() {
+    gpio_config_t io_conf = {
+        .pin_bit_mask = (1ULL << INT_GPIO),
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    gpio_config(&io_conf);
+    gpio_set_level(INT_GPIO, 0); // Ensure it's low initially
+}
+
+void spi_transfer_setup() {
+    spi_interrupt_pin_setup();
+
+    esp_err_t ret;
+
+    // Configure SPI bus
+    spi_bus_config_t bus_cfg = {
+        .mosi_io_num = PIN_NUM_MOSI,
+        .miso_io_num = PIN_NUM_MISO,
+        .sclk_io_num = PIN_NUM_SCLK,
+        .quadwp_io_num = -1,
+        .quadhd_io_num = -1
+    };
+
+    // Configure SPI slave interface
+    spi_slave_interface_config_t slave_cfg = {
+        .spics_io_num = PIN_NUM_CS,
+        .flags = 0,
+        .queue_size = QUEUE_SIZE,
+        .mode = 0,
+    };
+
+    ESP_LOGI(SPI_TRANSFER_TAG, "Initializing SPI slave...");
+
+    ret = spi_slave_initialize(SPI_HOST, &bus_cfg, &slave_cfg, DMA_CH);
+    if (ret != ESP_OK) {
+        ESP_LOGE(SPI_TRANSFER_TAG, "Failed to init SPI slave: %s", esp_err_to_name(ret));
+        vTaskDelete(NULL);
+    }
+
+    ESP_LOGI(SPI_TRANSFER_TAG, "SPI slave initialized. Ready to transmit data.");
+
+}
+
+void mic_task(void *arg) {
+
+    mic_setup();
 
     size_t bytesIn = 0;
     while (1) {
-        esp_err_t result = i2s_read(I2S_PORT, &sBuffer, bufferLen * sizeof(int16_t), &bytesIn, portMAX_DELAY);
-        if (result == ESP_OK) {
-            int sample_count = bytesIn / sizeof(int16_t);
-            int64_t sum = 0;
 
-            for (int i = 0; i < sample_count; i++) {
-                sum += abs(sBuffer[i]);
+        esp_err_t result = i2s_read(I2S_PORT, &sBuffer, bufferLen * sizeof(int16_t), &bytesIn, portMAX_DELAY);
+
+        if (result == ESP_OK) {
+            int next_write = (write_index + 1) % bufferCnt;
+
+            // If buffer is full, drop the oldest block by advancing the read_index
+            if (next_write == read_index) {
+                ESP_LOGW(I2S_MIC_TAG, "Buffer overflow: overwriting oldest block");
+                read_index = (read_index + 1) % bufferCnt;
             }
 
-            int average = sum / sample_count;
-            printf("Average amplitude: %d\n", average);
+            // Copy the new audio block into circular buffer
+            memcpy(&circular_buffer[write_index * bufferLen], sBuffer, bufferLen * sizeof(int16_t));
+            write_index = next_write;
+
+            // Trigger the SPI master (Raspberry Pi) via interrupt
+            trigger_transfer_interrupt();
+
+            // Optional: log a few samples for debugging
+            ESP_LOGI(I2S_MIC_TAG, "Sample[0..4]: %d %d %d %d %d", sBuffer[0], sBuffer[1], sBuffer[2], sBuffer[3], sBuffer[4]);
         } else {
             ESP_LOGE(I2S_MIC_TAG, "i2s_read failed: %s", esp_err_to_name(result));
         }
 
-        // Small delay between prints to prevent flooding
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        // // Small delay between prints to prevent flooding
+        // vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 
-void app_main(void) {
-    xTaskCreatePinnedToCore(mic_task, "mic_task", 10000, NULL, 1, NULL, 1);
+void spi_task(void *arg) {
+    spi_transfer_setup();
+
+    while (1) {
+        if (write_index != read_index) {
+            spi_slave_transaction_t trans = {
+                .length = bufferLen * sizeof(int16_t) * 8,
+                .tx_buffer = &circular_buffer[read_index * bufferLen],
+                .rx_buffer = NULL
+            };
+
+            esp_err_t ret = spi_slave_transmit(SPI_HOST, &trans, portMAX_DELAY);
+            if (ret == ESP_OK) {
+                ESP_LOGI(SPI_TRANSFER_TAG, "Sent SPI block");
+                read_index = (read_index + 1) % bufferCnt;
+            } else {
+                ESP_LOGE(SPI_TRANSFER_TAG, "SPI transmit error: %s", esp_err_to_name(ret));
+            }
+        } else {
+            vTaskDelay(10 / portTICK_PERIOD_MS); // Wait a bit if there's no data
+        }
+    }
 }
 
- // #include <stdio.h>
-// #include <string.h>
-// #include "freertos/FreeRTOS.h"
-// #include "freertos/task.h"
-// #include "driver/i2s.h"
-// #include "esp_log.h"
 
-// #define I2S_SD   10
-// #define I2S_WS   11
-// #define I2S_SCK  12
-// #define I2S_PORT I2S_NUM_0
-
-// #define bufferCnt 10
-// #define bufferLen 1024
-// int16_t sBuffer[bufferLen];
-
-// static const char *TAG = "I2S_MIC";
-
-// void i2s_install() {
-//     const i2s_config_t i2s_config = {
-//         .mode = I2S_MODE_MASTER | I2S_MODE_RX,
-//         .sample_rate = 44100,
-//         .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-//         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
-//         .communication_format = I2S_COMM_FORMAT_I2S,
-//         .intr_alloc_flags = 0,
-//         .dma_buf_count = bufferCnt,
-//         .dma_buf_len = bufferLen,
-//         .use_apll = false,
-//         .tx_desc_auto_clear = false,
-//         .fixed_mclk = 0
-//     };
-//     ESP_ERROR_CHECK(i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL));
-// }
-
-// void i2s_setpin() {
-//     const i2s_pin_config_t pin_config = {
-//         .bck_io_num = I2S_SCK,
-//         .ws_io_num = I2S_WS,
-//         .data_out_num = -1,
-//         .data_in_num = I2S_SD
-//     };
-//     ESP_ERROR_CHECK(i2s_set_pin(I2S_PORT, &pin_config));
-// }
-
-// void mic_task(void *arg) {
-//     i2s_install();
-//     i2s_setpin();
-//     i2s_start(I2S_PORT);
-
-//     size_t bytesIn = 0;
-//     while (1) {
-//         esp_err_t result = i2s_read(I2S_PORT, &sBuffer, bufferLen * sizeof(int16_t), &bytesIn, portMAX_DELAY);
-//         if (result == ESP_OK) {
-//             int sample_count = bytesIn / sizeof(int16_t);
-//             int64_t sum = 0;
-
-//             for (int i = 0; i < sample_count; i++) {
-//                 sum += abs(sBuffer[i]);
-//             }
-
-//             int average = sum / sample_count;
-//             printf("Average amplitude: %d\n", average);
-//         } else {
-//             ESP_LOGE(TAG, "i2s_read failed: %s", esp_err_to_name(result));
-//         }
-
-//         // Small delay between prints to prevent flooding
-//         vTaskDelay(100 / portTICK_PERIOD_MS);
-//     }
-// }
-
-// void app_main(void) {
-//     xTaskCreatePinnedToCore(mic_task, "mic_task", 10000, NULL, 1, NULL, 1);
-// }
+void app_main(void) {
+    xTaskCreatePinnedToCore(mic_task, "mic_task", 10000, NULL, 1, NULL, 1);
+    xTaskCreatePinnedToCore(spi_task, "spi_task", 10000, NULL, 1, NULL, 0);
+}
 
 // #include <string.h>
 // #include "freertos/FreeRTOS.h"
