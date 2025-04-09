@@ -39,11 +39,21 @@ volatile int read_index = 0;
 #define TRANSFER_SIZE  1024       // bytes
 
 // GPIO Interrupt Pin
-#define INT_GPIO GPIO_NUM_4
+#define INT_GPIO GPIO_NUM_4 // SPI Transfer Pin
+#define START_GPIO GPIO_NUM_5
 
 // TAGS
 static const char *I2S_MIC_TAG = "I2S_MIC";
 static const char *SPI_TRANSFER_TAG = "SPI_SLAVE";
+static const char *START_BUTTON_TAG = "START_BUTTON";
+
+typedef enum {
+    STATE_INIT,
+    STATE_RECORDING,
+    STATE_WAIT_RESP
+} system_state_t;
+
+volatile system_state_t curr_state = STATE_INIT;
 
 void mic_setup() {
     // I2S Driver Install
@@ -182,16 +192,52 @@ void spi_task(void *arg) {
             } else {
                 ESP_LOGE(SPI_TRANSFER_TAG, "SPI transmit error: %s", esp_err_to_name(ret));
             }
+        // } else if (curr_state == STATE_WAIT_RESP) {
+
         } else {
             vTaskDelay(10 / portTICK_PERIOD_MS); // Wait a bit if there's no data
         }
     }
 }
 
+void start_button_task(void *arg) {
+    gpio_set_direction(START_GPIO, GPIO_MODE_INPUT);
+
+    bool last_state = false;
+    while (1) {
+        bool pressed = gpio_get_level(START_GPIO);
+
+        switch (curr_state) {
+            case STATE_INIT:
+                if(pressed && !last_state) {
+                    curr_state = STATE_RECORDING;
+                    ESP_LOGI(START_BUTTON_TAG, "Button pressed, transitioning to RECORDING");
+                }
+                break;
+            case STATE_RECORDING:
+                if (!pressed && last_state) {
+                    curr_state = STATE_WAIT_RESP;
+                    ESP_LOGI(START_BUTTON_TAG, "Button released, transitioning to WAIT_RESPONSE");
+                }
+                break;
+            case STATE_WAIT_RESP:
+                break;
+        }
+
+
+
+
+        last_state = pressed;
+        vTaskDelay(50 / portTICK_PERIOD_MS);  // debounce
+    }
+}
 
 void app_main(void) {
-    xTaskCreatePinnedToCore(mic_task, "mic_task", 10000, NULL, 1, NULL, 1);
-    xTaskCreatePinnedToCore(spi_task, "spi_task", 10000, NULL, 1, NULL, 0);
+    // xTaskCreatePinnedToCore(mic_task, "mic_task", 10000, NULL, 1, NULL, 1);
+    // xTaskCreatePinnedToCore(spi_task, "spi_task", 10000, NULL, 1, NULL, 0);
+    xTaskCreatePinnedToCore(start_button_task, "start_button_task", 2048, NULL, 2, NULL, 1);
+    xTaskCreatePinnedToCore(mic_task, "mic_task", 8192, NULL, 5, NULL, 1);
+    xTaskCreatePinnedToCore(spi_task, "spi_task", 8192, NULL, 5, NULL, 0);
 }
 
 // #include <string.h>
