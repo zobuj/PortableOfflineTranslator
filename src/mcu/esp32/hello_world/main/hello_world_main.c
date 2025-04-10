@@ -26,6 +26,8 @@ int16_t sBuffer[bufferLen]; // DMA Buffer - 32-bit size for 24-bit PCM Data
 int16_t circular_buffer[bufferCnt * bufferLen];
 volatile int write_index = 0;
 volatile int read_index = 0;
+#define rx_buffer_len 1
+int16_t rx_buffer[rx_buffer_len];
 
 // SPI Transfer Configuration
 #define PIN_NUM_MOSI   35
@@ -145,6 +147,11 @@ void mic_task(void *arg) {
     size_t bytesIn = 0;
     while (1) {
 
+        if (curr_state != STATE_RECORDING) {
+            vTaskDelay(50 / portTICK_PERIOD_MS);
+            continue;
+        }
+
         esp_err_t result = i2s_read(I2S_PORT, &sBuffer, bufferLen * sizeof(int16_t), &bytesIn, portMAX_DELAY);
 
         if (result == ESP_OK) {
@@ -160,8 +167,8 @@ void mic_task(void *arg) {
             memcpy(&circular_buffer[write_index * bufferLen], sBuffer, bufferLen * sizeof(int16_t));
             write_index = next_write;
 
-            // Trigger the SPI master (Raspberry Pi) via interrupt
-            trigger_transfer_interrupt();
+            // // Trigger the SPI master (Raspberry Pi) via interrupt
+            // trigger_transfer_interrupt();
 
             // Optional: log a few samples for debugging
             ESP_LOGI(I2S_MIC_TAG, "Sample[0..4]: %d %d %d %d %d", sBuffer[0], sBuffer[1], sBuffer[2], sBuffer[3], sBuffer[4]);
@@ -178,7 +185,28 @@ void spi_task(void *arg) {
     spi_transfer_setup();
 
     while (1) {
-        if (write_index != read_index) {
+        if (curr_state == STATE_WAIT_RESP) {
+            // If the Pi sends data back, receive and handle it here
+            spi_slave_transaction_t recv = {
+                .length = rx_buffer_len * sizeof(int16_t) * 8,
+                .rx_buffer = rx_buffer,
+                .tx_buffer = NULL
+            };
+
+            esp_err_t ret = spi_slave_transmit(SPI_HOST, &recv, portMAX_DELAY);
+            if (ret == ESP_OK) {
+                ESP_LOGI(SPI_TRANSFER_TAG, "Received response from Pi");
+                // Process received data
+                curr_state = STATE_INIT;  // Reset to init or next logical state
+
+                // Clear circular buffer pointers
+                write_index = 0;
+                read_index = 0;
+
+            } else if (ret != ESP_OK) {
+                ESP_LOGE(SPI_TRANSFER_TAG, "SPI receive error: %s", esp_err_to_name(ret));
+            }
+        } else if (curr_state == STATE_RECORDING && write_index != read_index) {
             spi_slave_transaction_t trans = {
                 .length = bufferLen * sizeof(int16_t) * 8,
                 .tx_buffer = &circular_buffer[read_index * bufferLen],
@@ -192,8 +220,6 @@ void spi_task(void *arg) {
             } else {
                 ESP_LOGE(SPI_TRANSFER_TAG, "SPI transmit error: %s", esp_err_to_name(ret));
             }
-        // } else if (curr_state == STATE_WAIT_RESP) {
-
         } else {
             vTaskDelay(10 / portTICK_PERIOD_MS); // Wait a bit if there's no data
         }
@@ -211,12 +237,16 @@ void start_button_task(void *arg) {
             case STATE_INIT:
                 if(pressed && !last_state) {
                     curr_state = STATE_RECORDING;
+                    // Trigger the SPI master (Raspberry Pi) via interrupt
+                    trigger_transfer_interrupt(); // Start Polling
                     ESP_LOGI(START_BUTTON_TAG, "Button pressed, transitioning to RECORDING");
                 }
                 break;
             case STATE_RECORDING:
                 if (!pressed && last_state) {
                     curr_state = STATE_WAIT_RESP;
+                    // Trigger the SPI master (Raspberry Pi) via interrupt
+                    trigger_transfer_interrupt(); // End Polling
                     ESP_LOGI(START_BUTTON_TAG, "Button released, transitioning to WAIT_RESPONSE");
                 }
                 break;
