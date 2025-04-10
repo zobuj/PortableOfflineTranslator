@@ -1,50 +1,26 @@
-# from gpiozero import Button
-# import spidev
-# import time
-
-# INT_PIN = 17
-# spi = spidev.SpiDev()
-# spi.open(0, 0)
-# spi.max_speed_hz = 1_000_000
-
-# button = Button(INT_PIN, pull_up=False)
-
-# def read_audio():
-#     data = spi.xfer2([0x00] * 1024)
-#     print("Received:", data[:16])
-
-# button.when_pressed = read_audio
-
-# print("Waiting for audio data...")
-# while True:
-#     time.sleep(0.01)
-
-
+from gpiozero import Button
 import spidev
 import wave
-import time
-from datetime import datetime
 import struct
+import time
+
+# === GPIO Interrupt Settings ===
+INT_PIN = 17
+button = Button(INT_PIN, pull_up=False)
 
 # === SPI Settings ===
 SPI_BUS = 0
 SPI_DEVICE = 0
-SPI_SPEED = 4_000_000  # Try a higher speed for cleaner timing
+SPI_SPEED = 4_000_000 
 
 # === Audio Settings ===
-CHUNK_SIZE = 2048  # Must match ESP32 buffer
-
+CHUNK_SIZE = 2048  # Must match ESP32 buffer - 2048 bytes
 SAMPLE_RATE = 44100
-# SAMPLE_RATE = 16000
 BITS_PER_SAMPLE = 16
 BYTES_PER_SAMPLE = BITS_PER_SAMPLE // 8
 CHANNELS = 1
-RECORD_SECONDS = 5
 OUTPUT_FILE = f"recording_input.wav"
-CHUNK_DURATION = CHUNK_SIZE / (SAMPLE_RATE * BYTES_PER_SAMPLE)
-
-# === Derived values ===
-TARGET_BYTES = SAMPLE_RATE * BYTES_PER_SAMPLE * RECORD_SECONDS
+CHUNK_DURATION = CHUNK_SIZE / (SAMPLE_RATE * BYTES_PER_SAMPLE) # 2048 bytes / (44100 samples/sec * 2 bytes/sample) = 0.0232 sec
 
 # === Init SPI ===
 spi = spidev.SpiDev()
@@ -52,36 +28,86 @@ spi.open(SPI_BUS, SPI_DEVICE)
 spi.max_speed_hz = SPI_SPEED
 spi.mode = 0b00
 
-print(f"Recording {RECORD_SECONDS} sec to {OUTPUT_FILE}...")
+# === State Definitions ===
+STATE_WAITING = "waiting"
+STATE_POLLING = "polling"
+STATE_RESPONSE = "response"
 
-# === WAV File Setup ===
-wav_file = wave.open(OUTPUT_FILE, 'wb')
-wav_file.setnchannels(CHANNELS)
-wav_file.setsampwidth(BYTES_PER_SAMPLE)
-wav_file.setframerate(SAMPLE_RATE)
+# === Initial State ===
+state = STATE_WAITING
 
-# === Record Loop ===
+# === Global WAV handle ===
+wav_file = None
+
+# === Global Data Buffer ===
 buffer = bytearray()
-start = time.time()
+
+# === State Machine ===
+def handle_interrupt():
+    global state, wav_file, buffer
+
+    if state == STATE_WAITING:
+        print("\nInterrupt detected while waiting. Transitioning to polling state.")
+        state = STATE_POLLING
+
+        # === Setup WAV file ===
+        print("Opening WAV file for recording...")
+        buffer = bytearray()  # clear buffer just in case
+        wav_file = wave.open(OUTPUT_FILE, 'wb')
+        wav_file.setnchannels(CHANNELS)
+        wav_file.setsampwidth(BYTES_PER_SAMPLE)
+        wav_file.setframerate(SAMPLE_RATE)
+        
+    elif state == STATE_POLLING:
+        print("\nInterrupt detected while polling. Transitioning to response state.")
+        state = STATE_RESPONSE
+    elif state == STATE_RESPONSE:
+        print("\nInterrupt detected while processing response. Ignoring.")
+
+button.when_pressed = handle_interrupt
 
 try:
-    while len(buffer) < TARGET_BYTES:
-        to_read = min(CHUNK_SIZE, TARGET_BYTES - len(buffer))
-        data = spi.xfer2([0x00] * to_read)
-        buffer.extend(data)
-        print(f"\rReceived: {len(buffer)} / {TARGET_BYTES} bytes", end='', flush=True)
+    while True:
+        if state == STATE_WAITING:
+            # Waiting for interrupt
+            print(f"\rWaiting for interrupt from ESP32...", end='', flush=True)
+            time.sleep(0.1)
 
-        time.sleep(CHUNK_DURATION)
+        elif state == STATE_POLLING:
+            # Polling for data
+            print(f"\rPolling for data...", end='', flush=True)
 
-    print("\n\nDecoded first 16 samples:")
-    for i in range(0, 32, 2):
-        sample = struct.unpack('<h', buffer[i:i+2])[0]
-        print(f"Sample {i//2}: {sample}")
+            data = spi.xfer2([0x00] * CHUNK_SIZE)
+            buffer.extend(data)
+            # time.sleep(CHUNK_DURATION)  # wait to match data rate
+            time.sleep(max(0.01, CHUNK_DURATION - 0.005))
 
-    print("Done. Writing to WAV...")
-    wav_file.writeframes(buffer)
-    print(f"Saved {len(buffer)} bytes to {OUTPUT_FILE}")
+            print(f"\rReceived: {len(buffer)} bytes", end='', flush=True)
+
+
+        elif state == STATE_RESPONSE:
+            # Handle response (e.g., save to file)
+            print("\rProcessing response...")
+
+            if wav_file:
+                wav_file.writeframes(buffer)
+                wav_file.close()
+                print(f"\nSaved {len(buffer)} bytes to {OUTPUT_FILE}")
+                wav_file = None
+
+
+            # === Get Rid of Dummy Data ===
+            dummy_data = spi.xfer2([0x00] * CHUNK_SIZE)
+
+            time.sleep(5)  # Give some time before sending response
+
+            # === Send 16-bit value back to ESP32 ===
+            response_value = 0x1234  # Replace this with your actual value
+            response_bytes = struct.pack('<H', response_value)
+            spi.xfer2(list(response_bytes))
+            print(f"Sent 0x{response_value:04X} back to ESP32")
+
+            state = STATE_WAITING
 
 finally:
-    wav_file.close()
     spi.close()
