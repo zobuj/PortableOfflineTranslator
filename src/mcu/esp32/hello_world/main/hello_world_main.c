@@ -11,13 +11,14 @@
 #include "driver/i2s.h"
 #include "driver/spi_slave.h"
 #include "driver/spi_common.h"
+#include "driver/spi_master.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
 
 // Microphone I2S Configuration
-#define I2S_SD   10
-#define I2S_WS   11
-#define I2S_SCK  12
+#define I2S_SD   5
+#define I2S_WS   6
+#define I2S_SCK  7
 #define I2S_PORT I2S_NUM_0
 
 #define bufferCnt 16 // DMA Buffers
@@ -41,8 +42,9 @@ int16_t rx_buffer[rx_buffer_len];
 #define TRANSFER_SIZE  1024       // bytes
 
 // GPIO Interrupt Pin
-#define INT_GPIO GPIO_NUM_4 // SPI Transfer Pin
-#define START_GPIO GPIO_NUM_5
+// #define INT_GPIO GPIO_NUM_4 // SPI Transfer Pin
+#define INT_GPIO GPIO_NUM_16 // SPI Transfer Pin
+#define START_GPIO GPIO_NUM_15
 
 // TAGS
 static const char *I2S_MIC_TAG = "I2S_MIC";

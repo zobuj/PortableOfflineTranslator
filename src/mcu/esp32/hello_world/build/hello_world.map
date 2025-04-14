@@ -15567,7 +15567,7 @@ LOAD /Users/lorenzobujalilsilva/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241
                 0x3fceffd4                        syscall_table_ptr = 0x3fceffd4
                 0x3fceffd0                        _global_impure_ptr = 0x3fceffd0
                 0x40378000                        _diram_i_start = 0x40378000
-                0x3fcb6d40                        _heap_start = _heap_low_start
+                0x3fc9ed40                        _heap_start = _heap_low_start
                 0x40000000                        _heap_end = 0x40000000
                 0x600fe000                        _data_seg_org = ORIGIN (rtc_data_seg)
                 0x00000001                        ASSERT ((_flash_rodata_dummy_start == ORIGIN (default_rodata_seg)), .flash_rodata_dummy section must be placed at the beginning of the rodata segment.)
@@ -20246,7 +20246,7 @@ LOAD /Users/lorenzobujalilsilva/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241
                 0x3fc95c38                        . = ALIGN (0x4)
                 0x3fc95c38                        _noinit_end = ABSOLUTE (.)
 
-.dram0.bss      0x3fc95c38    0x21108
+.dram0.bss      0x3fc95c38     0x9108
                 0x3fc95c38                        . = ALIGN (0x8)
                 0x3fc95c38                        _bss_start = ABSOLUTE (.)
  *(.bss .bss.*)
@@ -20506,71 +20506,71 @@ LOAD /Users/lorenzobujalilsilva/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241
                 0x3fc96340        0x4 esp-idf/main/libmain.a(hello_world_main.c.obj)
                 0x3fc96340                write_index
  .bss.circular_buffer
-                0x3fc96344    0x20000 esp-idf/main/libmain.a(hello_world_main.c.obj)
+                0x3fc96344     0x8000 esp-idf/main/libmain.a(hello_world_main.c.obj)
                 0x3fc96344                circular_buffer
- .bss.sBuffer   0x3fcb6344      0x800 esp-idf/main/libmain.a(hello_world_main.c.obj)
-                0x3fcb6344                sBuffer
+ .bss.sBuffer   0x3fc9e344      0x800 esp-idf/main/libmain.a(hello_world_main.c.obj)
+                0x3fc9e344                sBuffer
  .bss.s_mmu_ctx
-                0x3fcb6b44       0x2c esp-idf/esp_mm/libesp_mm.a(esp_mmu_map.c.obj)
+                0x3fc9eb44       0x2c esp-idf/esp_mm/libesp_mm.a(esp_mmu_map.c.obj)
  .bss.flash_erasing
-                0x3fcb6b70        0x1 esp-idf/spi_flash/libspi_flash.a(flash_brownout_hook.c.obj)
+                0x3fc9eb70        0x1 esp-idf/spi_flash/libspi_flash.a(flash_brownout_hook.c.obj)
  .bss.flash_brownout_needs_reset
-                0x3fcb6b71        0x1 esp-idf/spi_flash/libspi_flash.a(flash_brownout_hook.c.obj)
+                0x3fc9eb71        0x1 esp-idf/spi_flash/libspi_flash.a(flash_brownout_hook.c.obj)
  .bss.s_flash_op_complete
-                0x3fcb6b72        0x1 esp-idf/spi_flash/libspi_flash.a(cache_utils.c.obj)
+                0x3fc9eb72        0x1 esp-idf/spi_flash/libspi_flash.a(cache_utils.c.obj)
  .bss.s_flash_op_can_start
-                0x3fcb6b73        0x1 esp-idf/spi_flash/libspi_flash.a(cache_utils.c.obj)
+                0x3fc9eb73        0x1 esp-idf/spi_flash/libspi_flash.a(cache_utils.c.obj)
  .bss.s_flash_op_mutex
-                0x3fcb6b74        0x4 esp-idf/spi_flash/libspi_flash.a(cache_utils.c.obj)
+                0x3fc9eb74        0x4 esp-idf/spi_flash/libspi_flash.a(cache_utils.c.obj)
  .bss.s_flash_op_cache_state
-                0x3fcb6b78        0x8 esp-idf/spi_flash/libspi_flash.a(cache_utils.c.obj)
+                0x3fc9eb78        0x8 esp-idf/spi_flash/libspi_flash.a(cache_utils.c.obj)
  .bss.s_flash_guard_ops
-                0x3fcb6b80        0x4 esp-idf/spi_flash/libspi_flash.a(flash_ops.c.obj)
+                0x3fc9eb80        0x4 esp-idf/spi_flash/libspi_flash.a(flash_ops.c.obj)
  .bss.esp_flash_default_chip
-                0x3fcb6b84        0x4 esp-idf/spi_flash/libspi_flash.a(esp_flash_spi_init.c.obj)
-                0x3fcb6b84                esp_flash_default_chip
+                0x3fc9eb84        0x4 esp-idf/spi_flash/libspi_flash.a(esp_flash_spi_init.c.obj)
+                0x3fc9eb84                esp_flash_default_chip
  .bss.s_chip_func
-                0x3fcb6b88        0x4 esp-idf/spi_flash/libspi_flash.a(spi_flash_oct_flash_init.c.obj)
+                0x3fc9eb88        0x4 esp-idf/spi_flash/libspi_flash.a(spi_flash_oct_flash_init.c.obj)
  .bss.s_chip_id
-                0x3fcb6b8c        0x4 esp-idf/spi_flash/libspi_flash.a(spi_flash_oct_flash_init.c.obj)
- .bss.reason    0x3fcb6b90        0x8 esp-idf/esp_system/libesp_system.a(crosscore_int.c.obj)
+                0x3fc9eb8c        0x4 esp-idf/spi_flash/libspi_flash.a(spi_flash_oct_flash_init.c.obj)
+ .bss.reason    0x3fc9eb90        0x8 esp-idf/esp_system/libesp_system.a(crosscore_int.c.obj)
  .bss.p_twdt_obj
-                0x3fcb6b98        0x4 esp-idf/esp_system/libesp_system.a(task_wdt.c.obj)
+                0x3fc9eb98        0x4 esp-idf/esp_system/libesp_system.a(task_wdt.c.obj)
  .bss.g_twdt_isr
-                0x3fcb6b9c        0x1 esp-idf/esp_system/libesp_system.a(task_wdt.c.obj)
-                0x3fcb6b9c                g_twdt_isr
- *fill*         0x3fcb6b9d        0x3 
+                0x3fc9eb9c        0x1 esp-idf/esp_system/libesp_system.a(task_wdt.c.obj)
+                0x3fc9eb9c                g_twdt_isr
+ *fill*         0x3fc9eb9d        0x3 
  .bss.init_context
-                0x3fcb6ba0        0xc esp-idf/esp_system/libesp_system.a(task_wdt_impl_timergroup.c.obj)
+                0x3fc9eba0        0xc esp-idf/esp_system/libesp_system.a(task_wdt_impl_timergroup.c.obj)
  .bss.s_rtc_io_status
-                0x3fcb6bac       0x1c esp-idf/esp_hw_support/libesp_hw_support.a(io_mux.c.obj)
+                0x3fc9ebac       0x1c esp-idf/esp_hw_support/libesp_hw_support.a(io_mux.c.obj)
  .bss._ZN3nvs4Page8SEC_SIZEE
-                0x3fcb6bc8        0x4 esp-idf/nvs_flash/libnvs_flash.a(nvs_page.cpp.obj)
-                0x3fcb6bc8                _ZN3nvs4Page8SEC_SIZEE
- .bss.spihost   0x3fcb6bcc        0xc esp-idf/esp_driver_spi/libesp_driver_spi.a(spi_slave.c.obj)
- .bss.p_i2s     0x3fcb6bd8        0x8 esp-idf/driver/libdriver.a(i2s_legacy.c.obj)
+                0x3fc9ebc8        0x4 esp-idf/nvs_flash/libnvs_flash.a(nvs_page.cpp.obj)
+                0x3fc9ebc8                _ZN3nvs4Page8SEC_SIZEE
+ .bss.spihost   0x3fc9ebcc        0xc esp-idf/esp_driver_spi/libesp_driver_spi.a(spi_slave.c.obj)
+ .bss.p_i2s     0x3fc9ebd8        0x8 esp-idf/driver/libdriver.a(i2s_legacy.c.obj)
  .bss.s_partition_list_lock
-                0x3fcb6be0        0x4 esp-idf/esp_partition/libesp_partition.a(partition.c.obj)
+                0x3fc9ebe0        0x4 esp-idf/esp_partition/libesp_partition.a(partition.c.obj)
  .bss.s_partition_list
-                0x3fcb6be4        0x4 esp-idf/esp_partition/libesp_partition.a(partition.c.obj)
+                0x3fc9ebe4        0x4 esp-idf/esp_partition/libesp_partition.a(partition.c.obj)
  .bss.spi_claiming_func
-                0x3fcb6be8        0xc esp-idf/esp_hw_support/libesp_hw_support.a(spi_share_hw_ctrl.c.obj)
+                0x3fc9ebe8        0xc esp-idf/esp_hw_support/libesp_hw_support.a(spi_share_hw_ctrl.c.obj)
  .bss.curr_partition$2
-                0x3fcb6bf4        0x4 esp-idf/app_update/libapp_update.a(esp_ota_ops.c.obj)
- .bss._ZL4init  0x3fcb6bf8        0x4 /Users/lorenzobujalilsilva/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32s3/no-rtti/libstdc++.a(eh_globals.o)
+                0x3fc9ebf4        0x4 esp-idf/app_update/libapp_update.a(esp_ota_ops.c.obj)
+ .bss._ZL4init  0x3fc9ebf8        0x4 /Users/lorenzobujalilsilva/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32s3/no-rtti/libstdc++.a(eh_globals.o)
  .bss._ZN17__eh_globals_init7_S_initE
-                0x3fcb6bfc        0x1 /Users/lorenzobujalilsilva/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32s3/no-rtti/libstdc++.a(eh_globals.o)
-                0x3fcb6bfc                _ZN17__eh_globals_init7_S_initE
- *fill*         0x3fcb6bfd        0x3 
- .bss           0x3fcb6c00        0x4 /Users/lorenzobujalilsilva/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32s3/no-rtti/libc.a(libc_a-environ.o)
- .bss           0x3fcb6c04      0x13c /Users/lorenzobujalilsilva/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32s3/no-rtti/libc.a(libc_a-findfp.o)
-                0x3fcb6c04                __sf
-                0x3fcb6d3c                __stdio_exit_handler
+                0x3fc9ebfc        0x1 /Users/lorenzobujalilsilva/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32s3/no-rtti/libstdc++.a(eh_globals.o)
+                0x3fc9ebfc                _ZN17__eh_globals_init7_S_initE
+ *fill*         0x3fc9ebfd        0x3 
+ .bss           0x3fc9ec00        0x4 /Users/lorenzobujalilsilva/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32s3/no-rtti/libc.a(libc_a-environ.o)
+ .bss           0x3fc9ec04      0x13c /Users/lorenzobujalilsilva/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32s3/no-rtti/libc.a(libc_a-findfp.o)
+                0x3fc9ec04                __sf
+                0x3fc9ed3c                __stdio_exit_handler
  *(.dynbss .dynsbss .gnu.linkonce.b .gnu.linkonce.b.* .gnu.linkonce.sb .gnu.linkonce.sb.* .gnu.linkonce.sb2 .gnu.linkonce.sb2.* .sbss .sbss.* .sbss2 .sbss2.* .scommon .share.mem)
  *(.ext_ram.bss .ext_ram.bss.*)
  *(COMMON)
-                0x3fcb6d40                        . = ALIGN (0x8)
-                0x3fcb6d40                        _bss_end = ABSOLUTE (.)
+                0x3fc9ed40                        . = ALIGN (0x8)
+                0x3fc9ed40                        _bss_end = ABSOLUTE (.)
                 0x00000001                        ASSERT (((_bss_end - ORIGIN (dram0_0_seg)) <= LENGTH (dram0_0_seg)), DRAM segment data does not fit.)
 
 .flash.text     0x42000020    0x1f196
@@ -26995,9 +26995,9 @@ LOAD /Users/lorenzobujalilsilva/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241
                 0x40383200                        _iram_end = ABSOLUTE (.)
 
 .dram0.heap_start
-                0x3fcb6d40        0x0
-                0x3fcb6d40                        . = ALIGN (0x8)
-                0x3fcb6d40                        _heap_low_start = ABSOLUTE (.)
+                0x3fc9ed40        0x0
+                0x3fc9ed40                        . = ALIGN (0x8)
+                0x3fc9ed40                        _heap_low_start = ABSOLUTE (.)
 
 .debug
  *(.debug)
