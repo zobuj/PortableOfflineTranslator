@@ -8,6 +8,9 @@
 #include <signal.h>     //signal()
 #include <time.h>
 
+#include <termios.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #define SRC_WRD_X_START 5
 #define SRC_TITLE_Y_START 5
@@ -17,6 +20,31 @@
 
 #define FONT_X 11
 #define FONT_Y 16
+
+#define SCREEN_ROWS 9  // 1 header + 8 visible rows
+
+void initTermios(int echo) {
+    struct termios tty;
+    tcgetattr(STDIN_FILENO, &tty);
+    tty.c_lflag &= ~ICANON;
+    if (echo) tty.c_lflag |= ECHO;
+    else tty.c_lflag &= ~ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+}
+
+void resetTermios() {
+    struct termios tty;
+    tcgetattr(STDIN_FILENO, &tty);
+    tty.c_lflag |= ICANON;
+    tty.c_lflag |= ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+}
+
+char getch() {
+    char ch;
+    read(STDIN_FILENO, &ch, 1);
+    return ch;
+}
 
 
 void LCD_2IN_test(void)
@@ -57,25 +85,38 @@ void LCD_2IN_test(void)
         "Spanish",
         "German",
         "Dutch",
-        "Chinese"
+        "Chinese",
+        "Korean",
+        "French",
+        "Italian",
+        "Hindi",
+        "Greek",
+        "Thai"
     };
 
-    char *screen_table[][2] = {
-        {"Source", "Destination"},
-        {"English", "English"},
-        {"Spanish", "Spanish"},
-        {"German",  "German"},
-        {"Dutch",   "Dutch"},
-        {"Chinese", "Chinese"}
-    };
-    
+    char *screen_table[SCREEN_ROWS][2];
+
+    // Fill in header row
+    screen_table[0][0] = "Source";
+    screen_table[0][1] = "Destination";
+
+    // Fill in initial view
+    for (int i = 1; i < SCREEN_ROWS; i++) {
+        screen_table[i][0] = languages[i - 1];     // Source column
+        screen_table[i][1] = languages[i - 1];     // Destination column
+    }
+
     int num_rows = sizeof(screen_table) / sizeof(screen_table[0]);
     int y_start = 0;
     int row_height = 26;
     int cell_width = 160;
     int padding = 5;
     
-    int prev_highlighted = 1;
+    int highlight_index_src = 1; // Skip header row
+    int prev_highlighted_src = 1;
+
+    int highlight_index_dest = 1; // Skip header row
+    int prev_highlighted_dest = 1;
 
     Paint_Clear(WHITE); // Clear the screen
     
@@ -83,15 +124,15 @@ void LCD_2IN_test(void)
         int y = y_start + row_height * i;
 
         // Added a start condition here to highlight the first languages
-        if(i == prev_highlighted) {
+        if(i == 1) {
             // Draw left cell background
             Paint_DrawRectangle(0, y, cell_width, y + row_height, BLUE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
             // Draw right cell background
-            Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, BLUE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+            Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, RED, DOT_PIXEL_1X1, DRAW_FILL_FULL);
 
             // Draw text with 5px padding
             Paint_DrawString_EN(0 + padding, y + padding, screen_table[i][0], &Font16, BLUE, WHITE);
-            Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[i][1], &Font16, BLUE, WHITE);
+            Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[i][1], &Font16, RED, WHITE);
         } else {
             // Draw left cell background 
             Paint_DrawRectangle(0, y, cell_width, y + row_height, BLACK, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
@@ -110,55 +151,59 @@ void LCD_2IN_test(void)
 
     LCD_2IN_Display((UBYTE *)BlackImage);
     DEV_Delay_ms(1000);  // Delay 1 second between highlights
+    
+    initTermios(0); // No echo, non-canonical input
+    
+    while (1) {
+        char ch = getch(); // wait for input
+        if (ch == 'q') break; // quit
+        
+        // Update source (left side)
+        if (ch == 'w' && highlight_index_src > 1) highlight_index_src--;
+        else if (ch == 's' && highlight_index_src < num_rows - 1) highlight_index_src++;
+    
+        // Update destination (right side)
+        if (ch == 'i' && highlight_index_dest > 1) highlight_index_dest--;
+        else if (ch == 'k' && highlight_index_dest < num_rows - 1) highlight_index_dest++;
+    
+        // Redraw source (if changed)
+        if (highlight_index_src != prev_highlighted_src) {
+            int y = y_start + row_height * prev_highlighted_src;
+            Paint_DrawRectangle(0, y, cell_width, y + row_height, WHITE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+            Paint_DrawRectangle(0, y, cell_width, y + row_height, BLACK, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+            Paint_DrawString_EN(padding, y + padding, screen_table[prev_highlighted_src][0], &Font16, WHITE, BLACK);
 
+            y = y_start + row_height * highlight_index_src;
+            Paint_DrawRectangle(0, y, cell_width, y + row_height, BLUE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+            Paint_DrawString_EN(padding, y + padding, screen_table[highlight_index_src][0], &Font16, BLUE, WHITE);
 
-    for (int iter = 0; iter < 5; iter++) { // You can make this `while(1)` if you want it to run forever
-        int highlight_index = rand() % num_rows;
+            prev_highlighted_src = highlight_index_src;
+        }
 
-        if (highlight_index == prev_highlighted || highlight_index == 0) continue;
+        // Redraw destination (if changed)
+        if (highlight_index_dest != prev_highlighted_dest) {
+            int y = y_start + row_height * prev_highlighted_dest;
+            Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, WHITE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+            Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, BLACK, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+            Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[prev_highlighted_dest][1], &Font16, WHITE, BLACK);
 
-        printf("Highlighted index: %d, prev highlighted: %d\n", highlight_index, prev_highlighted);
+            y = y_start + row_height * highlight_index_dest;
+            Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, RED, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+            Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[highlight_index_dest][1], &Font16, RED, WHITE);
 
-        int y = y_start + row_height * prev_highlighted;
-
-        // CLEAR BOX
-
-        // Draw left cell background 
-        Paint_DrawRectangle(0, y, cell_width, y + row_height, WHITE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
-        // Draw right cell background
-        Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, WHITE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
-
-        // DRAW BORDER
-
-        // Draw left cell background 
-        Paint_DrawRectangle(0, y, cell_width, y + row_height, BLACK, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
-        // Draw right cell background
-        Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, BLACK, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
-
-        // DRAW TEXT
-
-        // Draw text with 5px padding
-        Paint_DrawString_EN(0 + padding, y + padding, screen_table[prev_highlighted][0], &Font16, WHITE, BLACK);
-        Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[prev_highlighted][1], &Font16, WHITE, BLACK);
-
-
-        y = y_start + row_height * highlight_index;
-
-        // Draw left cell background
-        Paint_DrawRectangle(0, y, cell_width, y + row_height, BLUE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
-        // Draw right cell background
-        Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, BLUE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
-
-        // Draw text with 5px padding
-        Paint_DrawString_EN(0 + padding, y + padding, screen_table[highlight_index][0], &Font16, BLUE, WHITE);
-        Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[highlight_index][1], &Font16, BLUE, WHITE);
-
-        prev_highlighted = highlight_index;
+            prev_highlighted_dest = highlight_index_dest;
+        }
 
         LCD_2IN_Display((UBYTE *)BlackImage);
         DEV_Delay_ms(1000);  // Delay 1 second between highlights
+        printf("Currently Selected Languages: %s (Source) --> %s (Destination)\n",
+            screen_table[highlight_index_src][0],
+            screen_table[highlight_index_dest][1]);
+
     }
-	
+    
+    resetTermios();
+
     /* Module Exit */
     free(BlackImage);
     BlackImage = NULL;
