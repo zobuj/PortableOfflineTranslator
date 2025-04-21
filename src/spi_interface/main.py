@@ -10,7 +10,7 @@ button = Button(INT_PIN, pull_up=False)
 
 # === SPI Settings ===
 SPI_BUS = 0
-SPI_DEVICE = 0
+SPI_DEVICE = 1
 SPI_SPEED = 4_000_000 
 
 # === Audio Settings ===
