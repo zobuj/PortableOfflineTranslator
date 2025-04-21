@@ -52,15 +52,6 @@ void LCD_2IN_test(void)
 
     /* GUI */
 
-    // Table Setup
-
-    // Paint_Clear(WHITE); // Clear the Screen
-    // Paint_DrawString_EN(SRC_WRD_X_START, SRC_TITLE_Y_START, "Source", &Font16, WHITE, BLACK);
-    // Paint_DrawString_EN(DEST_WRD_X_START, DEST_TITLE_Y_START, "Destination", &Font16, WHITE, BLACK);
-
-    // Paint_DrawLine(160, 0, 160, 240, BLACK, DOT_PIXEL_1X1, LINE_STYLE_SOLID); // Vertical Line
-    // Paint_DrawLine(0, 21, 320, 21, BLACK, DOT_PIXEL_1X1, LINE_STYLE_SOLID); // Horizontal Line
-
     char * languages[] = {
         "English",
         "Spanish",
@@ -69,26 +60,100 @@ void LCD_2IN_test(void)
         "Chinese"
     };
 
-    int num_languages = sizeof(languages) / sizeof(languages[0]);
-    int starting_y = 26;
+    char *screen_table[][2] = {
+        {"Source", "Destination"},
+        {"English", "English"},
+        {"Spanish", "Spanish"},
+        {"German",  "German"},
+        {"Dutch",   "Dutch"},
+        {"Chinese", "Chinese"}
+    };
+    
+    int num_rows = sizeof(screen_table) / sizeof(screen_table[0]);
+    int y_start = 0;
+    int row_height = 26;
+    int cell_width = 160;
+    int padding = 5;
+    
+    int prev_highlighted = 1;
+
+    Paint_Clear(WHITE); // Clear the screen
+    
+    for (int i = 0; i < num_rows; i++) {
+        int y = y_start + row_height * i;
+
+        // Added a start condition here to highlight the first languages
+        if(i == prev_highlighted) {
+            // Draw left cell background
+            Paint_DrawRectangle(0, y, cell_width, y + row_height, BLUE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+            // Draw right cell background
+            Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, BLUE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+
+            // Draw text with 5px padding
+            Paint_DrawString_EN(0 + padding, y + padding, screen_table[i][0], &Font16, BLUE, WHITE);
+            Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[i][1], &Font16, BLUE, WHITE);
+        } else {
+            // Draw left cell background 
+            Paint_DrawRectangle(0, y, cell_width, y + row_height, BLACK, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+            // Draw right cell background
+            Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, BLACK, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+
+            // Draw text with 5px padding
+            Paint_DrawString_EN(0 + padding, y + padding, screen_table[i][0], &Font16, WHITE, BLACK);
+            Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[i][1], &Font16, WHITE, BLACK);
+        }
+
+    }
+
+    Paint_DrawLine(160, 0, 160, 240, BLACK, DOT_PIXEL_1X1, LINE_STYLE_SOLID); // Vertical Line
+    Paint_DrawLine(0, 26, 320, 26, BLACK, DOT_PIXEL_1X1, LINE_STYLE_SOLID); // Horizontal Line
+
+    LCD_2IN_Display((UBYTE *)BlackImage);
+    DEV_Delay_ms(1000);  // Delay 1 second between highlights
+
 
     for (int iter = 0; iter < 5; iter++) { // You can make this `while(1)` if you want it to run forever
-        int highlight_index = rand() % num_languages;
+        int highlight_index = rand() % num_rows;
 
-        Paint_Clear(WHITE);
+        if (highlight_index == prev_highlighted || highlight_index == 0) continue;
 
-        Paint_DrawString_EN(47, 5, "Source", &Font16, WHITE, BLACK);
-        Paint_DrawString_EN(194, 5, "Destination", &Font16, WHITE, BLACK);
-        Paint_DrawLine(160, 0, 160, 240, BLACK, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-        Paint_DrawLine(0, 21, 320, 21, BLACK, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        printf("Highlighted index: %d, prev highlighted: %d\n", highlight_index, prev_highlighted);
 
-        for (int i = 0; i < num_languages; i++) {
-            UWORD bg_color = (i == highlight_index) ? WHITE : BLACK;
-            UWORD fg_color = (i == highlight_index) ? BLUE : WHITE;
+        int y = y_start + row_height * prev_highlighted;
 
-            Paint_DrawString_EN(5, starting_y + 15 * i, languages[i], &Font16, fg_color, bg_color);
-            Paint_DrawString_EN(194, starting_y + 15 * i, languages[i], &Font16, fg_color, bg_color);
-        }
+        // CLEAR BOX
+
+        // Draw left cell background 
+        Paint_DrawRectangle(0, y, cell_width, y + row_height, WHITE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+        // Draw right cell background
+        Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, WHITE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+
+        // DRAW BORDER
+
+        // Draw left cell background 
+        Paint_DrawRectangle(0, y, cell_width, y + row_height, BLACK, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+        // Draw right cell background
+        Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, BLACK, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+
+        // DRAW TEXT
+
+        // Draw text with 5px padding
+        Paint_DrawString_EN(0 + padding, y + padding, screen_table[prev_highlighted][0], &Font16, WHITE, BLACK);
+        Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[prev_highlighted][1], &Font16, WHITE, BLACK);
+
+
+        y = y_start + row_height * highlight_index;
+
+        // Draw left cell background
+        Paint_DrawRectangle(0, y, cell_width, y + row_height, BLUE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+        // Draw right cell background
+        Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, BLUE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+
+        // Draw text with 5px padding
+        Paint_DrawString_EN(0 + padding, y + padding, screen_table[highlight_index][0], &Font16, BLUE, WHITE);
+        Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[highlight_index][1], &Font16, BLUE, WHITE);
+
+        prev_highlighted = highlight_index;
 
         LCD_2IN_Display((UBYTE *)BlackImage);
         DEV_Delay_ms(1000);  // Delay 1 second between highlights
