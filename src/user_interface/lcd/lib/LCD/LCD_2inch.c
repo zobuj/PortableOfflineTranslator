@@ -292,6 +292,6 @@ void  Handler_2IN_LCD(int signo)
 {
     //System Exit
     printf("\r\nHandler:Program stop\r\n");     
-    DEV_ModuleExit();
+    // DEV_ModuleExit();
 	exit(0);
 }
