@@ -4,7 +4,7 @@ GPIO_LIB_MACRO = USE_DEV_LIB
 CFLAGS += -g -O0 -Wall -D $(GPIO_LIB_MACRO)
 GPIO_LIB = -llgpio -lm
 
-TARGET = main
+TARGET = lcd_display
 
 LCD_LIB = ./lib
 LCD_LIB_CONFIG = $(LCD_LIB)/Config

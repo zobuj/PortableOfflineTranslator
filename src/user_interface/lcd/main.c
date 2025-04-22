@@ -6,20 +6,9 @@
 #include <stdio.h>		//printf()
 #include <stdlib.h>		//exit()
 #include <signal.h>     //signal()
-#include <time.h>
-
 #include <termios.h>
 #include <unistd.h>
 #include <fcntl.h>
-
-#define SRC_WRD_X_START 5
-#define SRC_TITLE_Y_START 5
-#define DEST_WRD_X_START 194
-#define DEST_TITLE_Y_START 5
-
-
-#define FONT_X 11
-#define FONT_Y 16
 
 #define SCREEN_ROWS 9  // 1 header + 8 visible rows
 
@@ -46,13 +35,19 @@ char getch() {
     return ch;
 }
 
+void handle_sigusr1(int sig) {
+    if (sig == SIGUSR1) {
+        printf("Received SIGUSR1 — forwarding data...\n");
+    }
+}
+
 
 void LCD_2IN_test(void)
 {
     // Exception handling:ctrl + c
     signal(SIGINT, Handler_2IN_LCD);
 
-    srand(time(NULL));  // Seed RNG
+    signal(SIGUSR1, handle_sigusr1);
     
     /* Module Init */
 	if(DEV_ModuleInit() != 0){
@@ -246,7 +241,16 @@ void LCD_2IN_test(void)
             screen_table[highlight_index_src][0],
             screen_table[highlight_index_dest][1]);
 
-
+        // Write selected languages to config.txt
+        FILE *config_file = fopen("config.txt", "w");  // You can change the path if needed
+        if (config_file != NULL) {
+            fprintf(config_file, "source=%s\ndestination=%s\n",
+                screen_table[highlight_index_src][0],
+                screen_table[highlight_index_dest][1]);
+            fclose(config_file);
+        } else {
+            perror("Failed to open config.txt for writing");
+        }
     }
     
     resetTermios();
