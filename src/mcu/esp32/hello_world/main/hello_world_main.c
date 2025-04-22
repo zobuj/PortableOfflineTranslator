@@ -14,6 +14,15 @@
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include <math.h>
+
+#define PI 3.14159265
+
+// Speaker I2S Configuration
+#define SPEAKER_I2S_SD   17
+#define SPEAKER_I2S_WS   18
+#define SPEAKER_I2S_SCK  8
+#define SPEAKER_I2S_PORT I2S_NUM_1
 
 // Microphone I2S Configuration
 #define I2S_SD   5
@@ -63,8 +72,8 @@ void mic_setup() {
     // I2S Driver Install
     const i2s_config_t i2s_config = {
         .mode = I2S_MODE_MASTER | I2S_MODE_RX,
-        .sample_rate = 44100,
-        // .sample_rate = 16000,
+        // .sample_rate = 44100,
+        .sample_rate = 16000,
         .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
         .communication_format = I2S_COMM_FORMAT_I2S,
@@ -264,100 +273,72 @@ void start_button_task(void *arg) {
     }
 }
 
+
+void speaker_setup() {
+    // I2S Driver Install
+    const i2s_config_t i2s_config = {
+        .mode = I2S_MODE_MASTER | I2S_MODE_TX,
+        .sample_rate = 44100,
+        // .sample_rate = 16000,
+        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
+        .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
+        .communication_format = I2S_COMM_FORMAT_I2S,
+        .intr_alloc_flags = 0,
+        .dma_buf_count = 4,
+        .dma_buf_len = 64,
+        .use_apll = false,
+        .tx_desc_auto_clear = true,
+        .fixed_mclk = 0
+    };
+    ESP_ERROR_CHECK(i2s_driver_install(SPEAKER_I2S_PORT, &i2s_config, 0, NULL));
+
+    // I2S Set Pin
+    const i2s_pin_config_t pin_config = {
+        .bck_io_num = SPEAKER_I2S_SCK,
+        .ws_io_num = SPEAKER_I2S_WS,
+        .data_out_num = SPEAKER_I2S_SD,
+        .data_in_num = -1
+    };
+    ESP_ERROR_CHECK(i2s_set_pin(SPEAKER_I2S_PORT, &pin_config));
+
+    // I2S Start
+    i2s_start(SPEAKER_I2S_PORT);
+}
+
+void speaker_task(void *arg) {
+    
+    const int sample_rate = 44100;
+    const int freq = 440; // A4 note
+    const int duration_sec = 2;
+    const int samples = sample_rate * duration_sec;
+    const float amplitude = 16000.0f;  // Max 32767 for int16_t
+    size_t bytes_written;
+
+    int16_t *sine_wave = (int16_t *)malloc(samples * sizeof(int16_t));
+    if (!sine_wave) {
+        ESP_LOGE("SPEAKER", "Failed to allocate memory for sine wave");
+        vTaskDelete(NULL);
+        return;
+    }
+
+    for (int i = 0; i < samples; i++) {
+        sine_wave[i] = (int16_t)(amplitude * sin(2 * PI * freq * i / sample_rate));
+    }
+
+    ESP_LOGI("SPEAKER", "Writing sine wave to speaker...");
+    i2s_write(SPEAKER_I2S_PORT, sine_wave, samples * sizeof(int16_t), &bytes_written, portMAX_DELAY);
+    ESP_LOGI("SPEAKER", "Done writing. Bytes written: %d", bytes_written);
+
+    free(sine_wave);
+    vTaskDelete(NULL);
+}
+
 void app_main(void) {
-    // xTaskCreatePinnedToCore(mic_task, "mic_task", 10000, NULL, 1, NULL, 1);
-    // xTaskCreatePinnedToCore(spi_task, "spi_task", 10000, NULL, 1, NULL, 0);
+    // speaker_setup();
+    // xTaskCreatePinnedToCore(speaker_task, "speaker_task", 4096, NULL, 5, NULL, 1);
     xTaskCreatePinnedToCore(start_button_task, "start_button_task", 2048, NULL, 2, NULL, 1);
     xTaskCreatePinnedToCore(mic_task, "mic_task", 8192, NULL, 5, NULL, 1);
     xTaskCreatePinnedToCore(spi_task, "spi_task", 8192, NULL, 5, NULL, 0);
+
 }
 
-// #include <string.h>
-// #include "freertos/FreeRTOS.h"
-// #include "freertos/task.h"
-// #include "esp_log.h"
-
-// #include "driver/spi_slave.h"
-// #include "driver/spi_common.h"
-// #include "driver/gpio.h"
-
-// #define TAG "SPI_SLAVE"
-
-// #define SPI_HOST       SPI3_HOST  // VSPI
-// #define DMA_CH         SPI_DMA_CH_AUTO
-// #define QUEUE_SIZE     3
-// #define TRANSFER_SIZE  1024       // bytes
-
-// // GPIOs for SPI3 (VSPI)
-// #define PIN_NUM_MOSI   35
-// #define PIN_NUM_MISO   37
-// #define PIN_NUM_SCLK   36
-// #define PIN_NUM_CS     39
-
-
-// // Test buffer (replace with I2S audio data later)
-// static uint8_t tx_buffer[TRANSFER_SIZE];
-
-// // Prepare dummy data (counting pattern)
-// void fill_tx_buffer() {
-//     for (int i = 0; i < TRANSFER_SIZE; ++i) {
-//         tx_buffer[i] = i & 0xFF;
-//     }
-//     ESP_LOGI(TAG, "tx_buffer[0..3] = %02X %02X %02X %02X",
-//         tx_buffer[0], tx_buffer[1], tx_buffer[2], tx_buffer[3]);
-    
-// }
-
-// void spi_slave_task(void *arg) {
-//     esp_err_t ret;
-
-//     // Configure SPI bus
-//     spi_bus_config_t bus_cfg = {
-//         .mosi_io_num = PIN_NUM_MOSI,
-//         .miso_io_num = PIN_NUM_MISO,
-//         .sclk_io_num = PIN_NUM_SCLK,
-//         .quadwp_io_num = -1,
-//         .quadhd_io_num = -1
-//     };
-
-//     // Configure SPI slave interface
-//     spi_slave_interface_config_t slave_cfg = {
-//         .spics_io_num = PIN_NUM_CS,
-//         .flags = 0,
-//         .queue_size = QUEUE_SIZE,
-//         .mode = 0,
-//     };
-
-//     ESP_LOGI(TAG, "Initializing SPI slave...");
-
-//     ret = spi_slave_initialize(SPI_HOST, &bus_cfg, &slave_cfg, DMA_CH);
-//     if (ret != ESP_OK) {
-//         ESP_LOGE(TAG, "Failed to init SPI slave: %s", esp_err_to_name(ret));
-//         vTaskDelete(NULL);
-//     }
-
-//     ESP_LOGI(TAG, "SPI slave initialized. Ready to transmit data.");
-
-//     while (1) {
-//         spi_slave_transaction_t trans = {
-//             .length = TRANSFER_SIZE * 8,  // in bits
-//             .tx_buffer = tx_buffer,
-//             .rx_buffer = NULL
-//         };
-
-//         // Fill test data each time (optional)
-//         fill_tx_buffer();
-
-//         // Wait for master to initiate transfer
-//         ret = spi_slave_transmit(SPI_HOST, &trans, portMAX_DELAY);
-//         if (ret != ESP_OK) {
-//             ESP_LOGE(TAG, "SPI transfer error: %s", esp_err_to_name(ret));
-//         } else {
-//             ESP_LOGI(TAG, "Sent %d bytes to master", TRANSFER_SIZE);
-//         }
-//     }
-// }
-
-// void app_main(void) {
-//     xTaskCreate(spi_slave_task, "spi_slave_task", 4096, NULL, 5, NULL);
-// }
