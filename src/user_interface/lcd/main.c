@@ -105,7 +105,8 @@ void LCD_2IN_test(void)
         screen_table[i][0] = languages[i - 1];     // Source column
         screen_table[i][1] = languages[i - 1];     // Destination column
     }
-
+    
+    int num_languages = sizeof(languages) / sizeof(languages[0]);
     int num_rows = sizeof(screen_table) / sizeof(screen_table[0]);
     int y_start = 0;
     int row_height = 26;
@@ -113,10 +114,11 @@ void LCD_2IN_test(void)
     int padding = 5;
     
     int highlight_index_src = 1; // Skip header row
-    int prev_highlighted_src = 1;
 
     int highlight_index_dest = 1; // Skip header row
-    int prev_highlighted_dest = 1;
+
+    int scroll_offset_src = 0;
+    int scroll_offset_dest = 0;
 
     Paint_Clear(WHITE); // Clear the screen
     
@@ -157,41 +159,85 @@ void LCD_2IN_test(void)
     while (1) {
         char ch = getch(); // wait for input
         if (ch == 'q') break; // quit
+    
+        if (ch == 'w') {
+            if (highlight_index_src > 1) {
+                highlight_index_src--; // Move up within screen
+            } else if (scroll_offset_src > 0) {
+                scroll_offset_src--;   // Scroll up
+            }
+        } else if (ch == 's') {
+            // Only scroll if we're already at the bottom of the screen
+            if (highlight_index_src == SCREEN_ROWS - 1 && scroll_offset_src + SCREEN_ROWS - 1 < num_languages) {
+                scroll_offset_src++;   // Scroll down
+            } else if (highlight_index_src < SCREEN_ROWS - 1 && 
+                       scroll_offset_src + highlight_index_src < num_languages - 1) {
+                highlight_index_src++; // Move down within screen
+            }
+        }        
+    
+        if (ch == 'i') {
+            if (highlight_index_dest > 1) {
+                highlight_index_dest--; // Move up within screen
+            } else if (scroll_offset_dest > 0) {
+                scroll_offset_dest--;   // Scroll up
+            }
+        } else if (ch == 'k') {
+            // Only scroll if we're already at the bottom of the screen
+            if (highlight_index_dest == SCREEN_ROWS - 1 && scroll_offset_dest + SCREEN_ROWS - 1 < num_languages) {
+                scroll_offset_dest++;   // Scroll down
+            } else if (highlight_index_dest < SCREEN_ROWS - 1 && 
+                       scroll_offset_dest + highlight_index_dest < num_languages - 1) {
+                highlight_index_dest++; // Move down within screen
+            }
+        }      
         
-        // Update source (left side)
-        if (ch == 'w' && highlight_index_src > 1) highlight_index_src--;
-        else if (ch == 's' && highlight_index_src < num_rows - 1) highlight_index_src++;
-    
-        // Update destination (right side)
-        if (ch == 'i' && highlight_index_dest > 1) highlight_index_dest--;
-        else if (ch == 'k' && highlight_index_dest < num_rows - 1) highlight_index_dest++;
-    
         // Redraw source (if changed)
-        if (highlight_index_src != prev_highlighted_src) {
-            int y = y_start + row_height * prev_highlighted_src;
-            Paint_DrawRectangle(0, y, cell_width, y + row_height, WHITE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+        for (int i = 1; i < SCREEN_ROWS; i++) {
+            int lang_index = scroll_offset_src + i - 1;
+            if (lang_index < num_languages) {
+                screen_table[i][0] = languages[lang_index];
+            } else {
+                screen_table[i][0] = "";
+            }
+        }
+
+        for(int i = 0; i < SCREEN_ROWS; i++) {
+            int y = row_height * i;
+
+            UWORD bg_src = (i == highlight_index_src) ? BLUE : WHITE;
+            UWORD fg_src = (i == highlight_index_src) ? WHITE : BLACK;
+
+            // Clear Cell 
+            Paint_DrawRectangle(0, y, cell_width, y + row_height, bg_src, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+            // Draw Cell Border
             Paint_DrawRectangle(0, y, cell_width, y + row_height, BLACK, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
-            Paint_DrawString_EN(padding, y + padding, screen_table[prev_highlighted_src][0], &Font16, WHITE, BLACK);
+            Paint_DrawString_EN(padding, y + padding, screen_table[i][0], &Font16, bg_src, fg_src);
 
-            y = y_start + row_height * highlight_index_src;
-            Paint_DrawRectangle(0, y, cell_width, y + row_height, BLUE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
-            Paint_DrawString_EN(padding, y + padding, screen_table[highlight_index_src][0], &Font16, BLUE, WHITE);
-
-            prev_highlighted_src = highlight_index_src;
         }
 
         // Redraw destination (if changed)
-        if (highlight_index_dest != prev_highlighted_dest) {
-            int y = y_start + row_height * prev_highlighted_dest;
-            Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, WHITE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+        for (int i = 1; i < SCREEN_ROWS; i++) {
+            int lang_index = scroll_offset_dest + i - 1;
+            if (lang_index < num_languages) {
+                screen_table[i][1] = languages[lang_index];
+            } else {
+                screen_table[i][1] = "";
+            }
+        }
+
+        for(int i = 0; i < SCREEN_ROWS; i++) {
+            int y = row_height * i;
+
+            UWORD bg_dest = (i == highlight_index_dest) ? RED : WHITE;
+            UWORD fg_dest = (i == highlight_index_dest) ? WHITE : BLACK;
+
+            // Clear Cell 
+            Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, bg_dest, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+            // Draw Cell Border
             Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, BLACK, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
-            Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[prev_highlighted_dest][1], &Font16, WHITE, BLACK);
+            Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[i][1], &Font16, bg_dest, fg_dest);
 
-            y = y_start + row_height * highlight_index_dest;
-            Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, RED, DOT_PIXEL_1X1, DRAW_FILL_FULL);
-            Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[highlight_index_dest][1], &Font16, RED, WHITE);
-
-            prev_highlighted_dest = highlight_index_dest;
         }
 
         LCD_2IN_Display((UBYTE *)BlackImage);
@@ -199,6 +245,7 @@ void LCD_2IN_test(void)
         printf("Currently Selected Languages: %s (Source) --> %s (Destination)\n",
             screen_table[highlight_index_src][0],
             screen_table[highlight_index_dest][1]);
+
 
     }
     
