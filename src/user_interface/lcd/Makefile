@@ -2,7 +2,6 @@ CC = gcc
 GPIO_LIB_MACRO = USE_DEV_LIB
 CFLAGS += -g -O0 -Wall -D $(GPIO_LIB_MACRO)
 
-# Add -lgpiod to link libgpiod (gpiod_chip_open, etc.)
 LIBS = -llgpio -lm -lgpiod
 
 TARGET = lcd_display
