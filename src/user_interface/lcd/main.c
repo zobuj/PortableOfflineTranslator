@@ -6,38 +6,62 @@
 #include <stdio.h>		//printf()
 #include <stdlib.h>		//exit()
 #include <signal.h>     //signal()
-#include <termios.h>
-#include <unistd.h>
-#include <fcntl.h>
+// #include <termios.h>
+// #include <unistd.h>
+// #include <fcntl.h>
 
 #define SCREEN_ROWS 9  // 1 header + 8 visible rows
 
-void initTermios(int echo) {
-    struct termios tty;
-    tcgetattr(STDIN_FILENO, &tty);
-    tty.c_lflag &= ~ICANON;
-    if (echo) tty.c_lflag |= ECHO;
-    else tty.c_lflag &= ~ECHO;
-    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
-}
+#define GPIO_SELECT 12
+#define GPIO_SCROLL_UP 23
+#define GPIO_SCROLL_DOWN 24
 
-void resetTermios() {
-    struct termios tty;
-    tcgetattr(STDIN_FILENO, &tty);
-    tty.c_lflag |= ICANON;
-    tty.c_lflag |= ECHO;
-    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
-}
 
-char getch() {
-    char ch;
-    read(STDIN_FILENO, &ch, 1);
-    return ch;
-}
+// void initTermios(int echo) {
+//     struct termios tty;
+//     tcgetattr(STDIN_FILENO, &tty);
+//     tty.c_lflag &= ~ICANON;
+//     if (echo) tty.c_lflag |= ECHO;
+//     else tty.c_lflag &= ~ECHO;
+//     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+// }
 
+// void resetTermios() {
+//     struct termios tty;
+//     tcgetattr(STDIN_FILENO, &tty);
+//     tty.c_lflag |= ICANON;
+//     tty.c_lflag |= ECHO;
+//     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+// }
+
+// char getch() {
+//     char ch;
+//     read(STDIN_FILENO, &ch, 1);
+//     return ch;
+// }
 void handle_sigusr1(int sig) {
     if (sig == SIGUSR1) {
-        printf("Received SIGUSR1 — forwarding data...\n");
+        printf("Received SIGUSR1 — reading external data...\n");
+
+        FILE *f = fopen("/home/lorenzo/Documents/PortableOfflineTranslator/src/user_interface/lcd/transcribed_text.txt", "r");
+        if (f) {
+            char buffer[256];
+            if (fgets(buffer, sizeof(buffer), f)) {
+                buffer[strcspn(buffer, "\n")] = 0; // remove newline
+                printf("Received string: %s\n", buffer);
+
+                // // Draw the message to the LCD
+                // Paint_Clear(WHITE);
+                // Paint_DrawString_EN(10, 100, buffer, &Font16, BLACK, WHITE);
+                // LCD_2IN_Display((UBYTE *)Paint.Image);
+                // DEV_Delay_ms(10000);  // Show for 2 seconds
+
+                // Re-draw full UI will happen in the main loop
+            }
+            fclose(f);
+        } else {
+            perror("Failed to open transcribed text file");
+        }
     }
 }
 
@@ -58,6 +82,11 @@ void LCD_2IN_test(void)
     /* LCD Init */
 	printf("2 inch LCD demo...\r\n");
 	LCD_2IN_Init();
+
+    DEV_GPIO_Mode(GPIO_SELECT, 0);        // input
+    DEV_GPIO_Mode(GPIO_SCROLL_UP, 0);     // input
+    DEV_GPIO_Mode(GPIO_SCROLL_DOWN, 0);   // input
+    
 	LCD_2IN_Clear(WHITE);
 	LCD_SetBacklight(1023);
 	
@@ -78,13 +107,11 @@ void LCD_2IN_test(void)
     char * languages[] = {
         "English",
         "Spanish",
-        "German",
-        "Dutch",
+        "Norwegian",
         "Chinese",
-        "Korean",
         "French",
         "Italian",
-        "Hindi",
+        "Korean",
         "Greek",
         "Thai"
     };
@@ -149,43 +176,44 @@ void LCD_2IN_test(void)
     LCD_2IN_Display((UBYTE *)BlackImage);
     DEV_Delay_ms(1000);  // Delay 1 second between highlights
     
-    initTermios(0); // No echo, non-canonical input
+    // initTermios(0); // No echo, non-canonical input
     
+    int last_up = 0, last_down = 0;
+
     while (1) {
-        char ch = getch(); // wait for input
-        if (ch == 'q') break; // quit
+        int select = DEV_Digital_Read(GPIO_SELECT);
+        int up = DEV_Digital_Read(GPIO_SCROLL_UP);
+        int down = DEV_Digital_Read(GPIO_SCROLL_DOWN);
     
-        if (ch == 'w') {
-            if (highlight_index_src > 1) {
-                highlight_index_src--; // Move up within screen
-            } else if (scroll_offset_src > 0) {
-                scroll_offset_src--;   // Scroll up
+        // Debounce logic: only trigger on rising edge
+        if (up && !last_up) {
+            if (select == 0) {
+                if (highlight_index_src > 1) highlight_index_src--;
+                else if (scroll_offset_src > 0) scroll_offset_src--;
+            } else {
+                if (highlight_index_dest > 1) highlight_index_dest--;
+                else if (scroll_offset_dest > 0) scroll_offset_dest--;
             }
-        } else if (ch == 's') {
-            // Only scroll if we're already at the bottom of the screen
-            if (highlight_index_src == SCREEN_ROWS - 1 && scroll_offset_src + SCREEN_ROWS - 1 < num_languages) {
-                scroll_offset_src++;   // Scroll down
-            } else if (highlight_index_src < SCREEN_ROWS - 1 && 
-                       scroll_offset_src + highlight_index_src < num_languages - 1) {
-                highlight_index_src++; // Move down within screen
-            }
-        }        
+        }
     
-        if (ch == 'i') {
-            if (highlight_index_dest > 1) {
-                highlight_index_dest--; // Move up within screen
-            } else if (scroll_offset_dest > 0) {
-                scroll_offset_dest--;   // Scroll up
+        if (down && !last_down) {
+            if (select == 0) {
+                if (highlight_index_src == SCREEN_ROWS - 1 && scroll_offset_src + SCREEN_ROWS - 1 < num_languages)
+                    scroll_offset_src++;
+                else if (highlight_index_src < SCREEN_ROWS - 1 &&
+                         scroll_offset_src + highlight_index_src < num_languages - 1)
+                    highlight_index_src++;
+            } else {
+                if (highlight_index_dest == SCREEN_ROWS - 1 && scroll_offset_dest + SCREEN_ROWS - 1 < num_languages)
+                    scroll_offset_dest++;
+                else if (highlight_index_dest < SCREEN_ROWS - 1 &&
+                         scroll_offset_dest + highlight_index_dest < num_languages - 1)
+                    highlight_index_dest++;
             }
-        } else if (ch == 'k') {
-            // Only scroll if we're already at the bottom of the screen
-            if (highlight_index_dest == SCREEN_ROWS - 1 && scroll_offset_dest + SCREEN_ROWS - 1 < num_languages) {
-                scroll_offset_dest++;   // Scroll down
-            } else if (highlight_index_dest < SCREEN_ROWS - 1 && 
-                       scroll_offset_dest + highlight_index_dest < num_languages - 1) {
-                highlight_index_dest++; // Move down within screen
-            }
-        }      
+        }
+    
+        last_up = up;
+        last_down = down;
         
         // Redraw source (if changed)
         for (int i = 1; i < SCREEN_ROWS; i++) {
@@ -236,7 +264,7 @@ void LCD_2IN_test(void)
         }
 
         LCD_2IN_Display((UBYTE *)BlackImage);
-        DEV_Delay_ms(1000);  // Delay 1 second between highlights
+        DEV_Delay_ms(200);  // Delay 1 second between highlights
         printf("Currently Selected Languages: %s (Source) --> %s (Destination)\n",
             screen_table[highlight_index_src][0],
             screen_table[highlight_index_dest][1]);
@@ -251,9 +279,10 @@ void LCD_2IN_test(void)
         } else {
             perror("Failed to open config.txt for writing");
         }
+
     }
     
-    resetTermios();
+    // resetTermios();
 
     /* Module Exit */
     free(BlackImage);
@@ -281,6 +310,14 @@ int main(int argc, char *argv[])
     }
     else {
         printf("%.2lf inch LCD Module\r\n",size);
+    }
+
+    FILE *pid_file = fopen("lcd_display.pid", "w");
+    if (pid_file) {
+        fprintf(pid_file, "%d\n", getpid());
+        fclose(pid_file);
+    } else {
+        perror("Failed to write LCD display PID");
     }
 
     LCD_2IN_test();

@@ -152,10 +152,10 @@ fi
 
 # deactivate  # Deactivate speaker virtual environment
 
-# cat "$TRANSLATED_TEXT_PATH" | ./piper --model en_US-lessac-medium.onnx --output_file ../../pcm_generator/output/translated_output.wav
+cat "$TRANSLATED_TEXT_PATH" | ./piper --model en_US-lessac-medium.onnx --output_file ../../pcm_generator/output/translated_output.wav
 # cat "$TRANSLATED_TEXT_PATH" | ./piper --model es_ES-carlfm-x_low.onnx --output_file ../../pcm_generator/output/translated_output.wav
 # cat "$TRANSLATED_TEXT_PATH" | ./piper --model it_IT-paola-medium.onnx --output_file ../../pcm_generator/output/translated_output.wav
-cat "$TRANSLATED_TEXT_PATH" | ./piper --model zh_CN-huayan-x_low.onnx --output_file ../../pcm_generator/output/translated_output.wav
+# cat "$TRANSLATED_TEXT_PATH" | ./piper --model zh_CN-huayan-x_low.onnx --output_file ../../pcm_generator/output/translated_output.wav
 
 popd
 
