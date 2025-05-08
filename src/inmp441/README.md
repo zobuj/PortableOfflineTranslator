@@ -1,1 +1,0 @@
-INMP Configuration Information

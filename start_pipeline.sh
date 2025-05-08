@@ -13,8 +13,8 @@ if [[ ! -f $PIPELINE_EXEC ]]; then
     exit 1
 fi
 
-MEM_LOG="pipeline_out/pipeline_mem_log.csv"
-mkdir -p pipeline_out
+MEM_LOG="output/pipeline_mem_log.csv"
+mkdir -p output
 echo "timestamp,rss_kb,vsz_kb" > $MEM_LOG
 
 # Run pipeline in a subshell so we can track its PID and wait on it
