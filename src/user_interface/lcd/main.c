@@ -3,12 +3,10 @@
 #include "GUI_Paint.h"
 #include "GUI_BMP.h"
 #include <math.h>
-#include <stdio.h>		//printf()
-#include <stdlib.h>		//exit()
-#include <signal.h>     //signal()
-// #include <termios.h>
-// #include <unistd.h>
-// #include <fcntl.h>
+#include <stdio.h>		
+#include <stdlib.h>	
+#include <signal.h>   
+
 
 #define SCREEN_ROWS 9  // 1 header + 8 visible rows
 
@@ -17,28 +15,6 @@
 #define GPIO_SCROLL_DOWN 24
 
 
-// void initTermios(int echo) {
-//     struct termios tty;
-//     tcgetattr(STDIN_FILENO, &tty);
-//     tty.c_lflag &= ~ICANON;
-//     if (echo) tty.c_lflag |= ECHO;
-//     else tty.c_lflag &= ~ECHO;
-//     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
-// }
-
-// void resetTermios() {
-//     struct termios tty;
-//     tcgetattr(STDIN_FILENO, &tty);
-//     tty.c_lflag |= ICANON;
-//     tty.c_lflag |= ECHO;
-//     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
-// }
-
-// char getch() {
-//     char ch;
-//     read(STDIN_FILENO, &ch, 1);
-//     return ch;
-// }
 void handle_sigusr1(int sig) {
     if (sig == SIGUSR1) {
         printf("Received SIGUSR1 — reading external data...\n");
@@ -47,16 +23,9 @@ void handle_sigusr1(int sig) {
         if (f) {
             char buffer[256];
             if (fgets(buffer, sizeof(buffer), f)) {
-                buffer[strcspn(buffer, "\n")] = 0; // remove newline
+                buffer[strcspn(buffer, "\n")] = 0; 
                 printf("Received string: %s\n", buffer);
 
-                // // Draw the message to the LCD
-                // Paint_Clear(WHITE);
-                // Paint_DrawString_EN(10, 100, buffer, &Font16, BLACK, WHITE);
-                // LCD_2IN_Display((UBYTE *)Paint.Image);
-                // DEV_Delay_ms(10000);  // Show for 2 seconds
-
-                // Re-draw full UI will happen in the main loop
             }
             fclose(f);
         } else {
@@ -83,9 +52,9 @@ void LCD_2IN_test(void)
 	printf("2 inch LCD demo...\r\n");
 	LCD_2IN_Init();
 
-    DEV_GPIO_Mode(GPIO_SELECT, 0);        // input
-    DEV_GPIO_Mode(GPIO_SCROLL_UP, 0);     // input
-    DEV_GPIO_Mode(GPIO_SCROLL_DOWN, 0);   // input
+    DEV_GPIO_Mode(GPIO_SELECT, 0);        
+    DEV_GPIO_Mode(GPIO_SCROLL_UP, 0);    
+    DEV_GPIO_Mode(GPIO_SCROLL_DOWN, 0);   
     
 	LCD_2IN_Clear(WHITE);
 	LCD_SetBacklight(1023);
@@ -135,9 +104,9 @@ void LCD_2IN_test(void)
     int cell_width = 160;
     int padding = 5;
     
-    int highlight_index_src = 1; // Skip header row
+    int highlight_index_src = 1; 
 
-    int highlight_index_dest = 1; // Skip header row
+    int highlight_index_dest = 1; 
 
     int scroll_offset_src = 0;
     int scroll_offset_dest = 0;
@@ -154,7 +123,7 @@ void LCD_2IN_test(void)
             // Draw right cell background
             Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, RED, DOT_PIXEL_1X1, DRAW_FILL_FULL);
 
-            // Draw text with 5px padding
+            // Draw text
             Paint_DrawString_EN(0 + padding, y + padding, screen_table[i][0], &Font16, BLUE, WHITE);
             Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[i][1], &Font16, RED, WHITE);
         } else {
@@ -163,20 +132,19 @@ void LCD_2IN_test(void)
             // Draw right cell background
             Paint_DrawRectangle(cell_width, y, 2 * cell_width, y + row_height, BLACK, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
 
-            // Draw text with 5px padding
+            // Draw text
             Paint_DrawString_EN(0 + padding, y + padding, screen_table[i][0], &Font16, WHITE, BLACK);
             Paint_DrawString_EN(cell_width + padding, y + padding, screen_table[i][1], &Font16, WHITE, BLACK);
         }
 
     }
 
-    Paint_DrawLine(160, 0, 160, 240, BLACK, DOT_PIXEL_1X1, LINE_STYLE_SOLID); // Vertical Line
-    Paint_DrawLine(0, 26, 320, 26, BLACK, DOT_PIXEL_1X1, LINE_STYLE_SOLID); // Horizontal Line
+    Paint_DrawLine(160, 0, 160, 240, BLACK, DOT_PIXEL_1X1, LINE_STYLE_SOLID); 
+    Paint_DrawLine(0, 26, 320, 26, BLACK, DOT_PIXEL_1X1, LINE_STYLE_SOLID); 
 
     LCD_2IN_Display((UBYTE *)BlackImage);
-    DEV_Delay_ms(1000);  // Delay 1 second between highlights
-    
-    // initTermios(0); // No echo, non-canonical input
+    DEV_Delay_ms(1000); 
+
     
     int last_up = 0, last_down = 0;
 
@@ -184,8 +152,7 @@ void LCD_2IN_test(void)
         int select = DEV_Digital_Read(GPIO_SELECT);
         int up = DEV_Digital_Read(GPIO_SCROLL_UP);
         int down = DEV_Digital_Read(GPIO_SCROLL_DOWN);
-    
-        // Debounce logic: only trigger on rising edge
+
         if (up && !last_up) {
             if (select == 0) {
                 if (highlight_index_src > 1) highlight_index_src--;
@@ -215,7 +182,7 @@ void LCD_2IN_test(void)
         last_up = up;
         last_down = down;
         
-        // Redraw source (if changed)
+        // Redraw source
         for (int i = 1; i < SCREEN_ROWS; i++) {
             int lang_index = scroll_offset_src + i - 1;
             if (lang_index < num_languages) {
@@ -239,7 +206,7 @@ void LCD_2IN_test(void)
 
         }
 
-        // Redraw destination (if changed)
+        // Redraw destination
         for (int i = 1; i < SCREEN_ROWS; i++) {
             int lang_index = scroll_offset_dest + i - 1;
             if (lang_index < num_languages) {
@@ -264,13 +231,13 @@ void LCD_2IN_test(void)
         }
 
         LCD_2IN_Display((UBYTE *)BlackImage);
-        DEV_Delay_ms(200);  // Delay 1 second between highlights
+        DEV_Delay_ms(200);  
         printf("Currently Selected Languages: %s (Source) --> %s (Destination)\n",
             screen_table[highlight_index_src][0],
             screen_table[highlight_index_dest][1]);
 
         // Write selected languages to config.txt
-        FILE *config_file = fopen("config.txt", "w");  // You can change the path if needed
+        FILE *config_file = fopen("config.txt", "w");  
         if (config_file != NULL) {
             fprintf(config_file, "source=%s\ndestination=%s\n",
                 screen_table[highlight_index_src][0],
@@ -281,8 +248,7 @@ void LCD_2IN_test(void)
         }
 
     }
-    
-    // resetTermios();
+
 
     /* Module Exit */
     free(BlackImage);
