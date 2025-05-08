@@ -1,3 +1,0 @@
-# Subsystem Requirement
-
-The main two subsystems that we will need to work on will be the main and secondary processing units. They are going to require significant work to be able to build an infastructure of real time behaviour. We are going to need to generate some synchronization communication between systems to ensure that we can actually send data, process it and recieve it. After we can ensure that this is working we can go ahead and test with the hardware components and deploy everything onto an embedded system.
