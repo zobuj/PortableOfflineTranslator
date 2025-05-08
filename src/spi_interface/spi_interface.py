@@ -8,13 +8,13 @@ import signal
 import sys
 from threading import Event
 
-# Save our PID for the pipeline to find
+# Save pid to file
 pid_file = "/home/lorenzo/Documents/PortableOfflineTranslator/src/spi_interface/spi_interface.pid"
 with open(pid_file, "w") as f:
     f.write(str(os.getpid()))
 print(f"[SPI] Wrote PID {os.getpid()} to {pid_file}")
 
-
+# Handle interrupts through PID
 processing_done = Event()
 
 def handle_sigusr1(signum, frame):
@@ -23,7 +23,7 @@ def handle_sigusr1(signum, frame):
 
 signal.signal(signal.SIGUSR1, handle_sigusr1)
 
-# === Argument Parsing ===
+# save pipeline pid to file
 if len(sys.argv) < 2:
     print("Usage: python3 spi_interface.py <pipeline_pid>")
     sys.exit(1)
@@ -34,18 +34,17 @@ except ValueError:
     print("Invalid PID provided.")
     sys.exit(1)
 
-# === GPIO Interrupt Settings ===
+# interrupt pin
 INT_PIN = 17
 button = Button(INT_PIN, pull_up=False)
 
-# === SPI Settings ===
+# spi interface
 SPI_BUS = 0
 SPI_DEVICE = 1
 SPI_SPEED = 4_000_000 
 
-# === Audio Settings ===
+# audio settings
 CHUNK_SIZE = 2048
-# SAMPLE_RATE = 44100
 SAMPLE_RATE = 16000
 BITS_PER_SAMPLE = 16
 BYTES_PER_SAMPLE = BITS_PER_SAMPLE // 8
@@ -54,13 +53,13 @@ WAV_OUTPUT_FILE = "recording_input.wav"
 PCM_OUTPUT_FILE = "recording_input.pcm"
 CHUNK_DURATION = CHUNK_SIZE / (SAMPLE_RATE * BYTES_PER_SAMPLE)
 
-# === Init SPI ===
+# start spi interface
 spi = spidev.SpiDev()
 spi.open(SPI_BUS, SPI_DEVICE)
 spi.max_speed_hz = SPI_SPEED
 spi.mode = 0b00
 
-# === State Definitions ===
+# state machine
 STATE_WAITING = "waiting"
 STATE_POLLING = "polling"
 STATE_RESPONSE = "response"
@@ -68,12 +67,11 @@ STATE_PROCESSING = "processing"
 
 state = STATE_WAITING
 
-# === Global handles ===
 wav_file = None
 pcm_file = None
 buffer = bytearray()
 
-# === State Machine ===
+# interrupt handler for gpio
 def handle_interrupt():
     global state, wav_file, pcm_file, buffer
 
@@ -81,7 +79,6 @@ def handle_interrupt():
         print("\nInterrupt detected while waiting. Transitioning to polling state.")
         state = STATE_POLLING
 
-        # === Setup WAV file ===
         print("Opening WAV and PCM files for recording...")
         buffer = bytearray()
         wav_file = wave.open(WAV_OUTPUT_FILE, 'wb')
@@ -99,6 +96,7 @@ def handle_interrupt():
 
 button.when_pressed = handle_interrupt
 
+# state machine loop
 try:
     while True:
         if state == STATE_WAITING:
@@ -127,13 +125,6 @@ try:
             # Get Rid of Dummy Data
             spi.xfer2([0x00] * CHUNK_SIZE)
 
-            # time.sleep(5)
-
-            # response_value = 0x1234
-            # response_bytes = struct.pack('<H', response_value)
-            # spi.xfer2(list(response_bytes))
-            # print(f"Sent 0x{response_value:04X} back to ESP32")
-
             # Send Signal to Pipeline Process to start translation
             try:
                 os.kill(PIPELINE_PID, signal.SIGUSR1)
@@ -152,7 +143,6 @@ try:
 
             time.sleep(5)
 
-            # === Send Translated PCM Data ===
             TRANSLATED_PCM_PATH = "/home/lorenzo/Documents/PortableOfflineTranslator/src/rspcm/output/translated_output.pcm"
             try:
                 with open(TRANSLATED_PCM_PATH, "rb") as pcm_file:
@@ -180,12 +170,6 @@ try:
             state = STATE_WAITING
 
 
-
-
-
-
-
-
             response_value = 0x1234
             response_bytes = struct.pack('<H', response_value)
             spi.xfer2(list(response_bytes))
@@ -193,10 +177,8 @@ try:
 
             print("\rProcessing complete. Waiting for next interrupt...")
             state = STATE_WAITING
-            
-
-            
-
+        
+# cleanup
 finally:
     if wav_file:
         wav_file.close()
