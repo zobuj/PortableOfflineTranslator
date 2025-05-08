@@ -14,6 +14,10 @@
 - [04-06-2025 - MCU Change and ESP Firmware Start](#04-06-2025---mcu-change-and-esp-firmware-start)
 - [04-08-2025 - Getting Audio Data from Microphone using ESP32 firmware](#04-08-2025---getting-audio-data-from-microphone-using-esp32-firmware)
 - [04-09-2025 - Setting up the SPI interface protocol on the Pi to recieve the data](#04-09-2025---setting-up-the-spi-interface-protocol-on-the-pi-to-recieve-the-data)
+- [04-14-2025 - Created LCD Interface with driver code](#04-14-2025---created-lcd-interface-with-driver-code)
+- [04-21-2025 - Finalized LCD Interface](#04-21-2025---finalized-lcd-interface)
+- [04-22-2025 - Finalized Software](#04-22-2025---finalized-software)
+- [05-03-2025 - Validated performance of working pipeline on the CM5](#05-03-2025---validated-performance-of-working-pipeline-on-the-cm5)
 ---
 # 02-05-2025 - Creation of repository for project
 
@@ -329,3 +333,112 @@ In order to notify the Pi to start polling data, I would send an interrupt from 
 That is another point to mention, since the Raspberry Pi doesn't have driver support for a SPI slave, I configured the ESP to act as a SPI slave and then use an interrupt to ask the master to get data from the slave. In this way the ESP32 is acting as a peripheral device capable of reading from the I2S audio.
 
 
+---
+
+# 04-14-2025 - Created LCD Interface with driver code
+
+I wanted to work today on the LCD to be able to have a menu of selection for languages on the display. This would require interacting with the library of drivers that would write the correct SPI commands for configuring the LCD display.
+
+One of the main benefits of the driver library is that it provides us primitives for writing characters, strings, lines, squares, circles, and more. These primitives are configured so they can exactly write the correct pixel value at each location to show the right image. 
+
+I used this to be able to build a menu of languages:
+
+![Language Menu](images/language_menu.png)
+
+First thing that I need to get working is being able to put all of the languages of text onto the screen as I designed it. Then I need to implement a scrolling feature that highlights the currently selected langauge and then updates a configuration file that can be used by other processes.
+
+
+---
+
+# 04-21-2025 - Finalized LCD Interface
+
+I finalized the LCD interface today by getting the scrolling feature down. The way that the screen works is that it stores an array of languages that can be selected for the source and destination language. This table of languages is dynamic so, more languages can be added over time to be able to support more languages. Then I store an 2d array that stores the languages that are currently being shown on the screen. 
+
+At the start of the program, a small window of langauges are currently within the 2d array which is what is seen. As the user sends interrupts to move down the menu, a pointer for the currently highlighted index is updated and when we reach the end of the screen all of the languages are moved up on the screen and the highlighted language stays at the bottom while the next language enters the window. 
+
+Additionally, the highlight index will be used to change the color of the cell background to a particular color to show its currently being selected.
+
+![LCD final](images/lcd_display_final.jpeg)
+
+
+
+---
+
+# 04-22-2025 - Finalized Software
+
+During today, I need to get the software for the entire system down. The final things that need to be integrated are:
+
+- SPI Interface to transfer PCM data back to ESP32
+- ESP32 Firmware to recieve PCM data
+- ESP32 Firmware to setup I2S for speaker and drive with recieved PCM data.
+
+So in order to orchestrate all of the processes to work properly together, I decided to use signals between process. There would be a spi interface process, a pipeline process and a process for the LCD display. All of these processes are going to write their PID to a configuration file that can be used by other processes to communicate with them and these processes start on boot as a kernel service. 
+
+Software flow:
+- User presses button to select languages to translate to and from. LCD process will read these GPIO interrupts and update the configuraiton file to be used by the pipeline process.
+- User presses button to trigger interrupt on ESP32
+- ESP32 notifies CM5 to start collecting data, this signal is recieved on the GPIO signal monitoried by the spi interface process. 
+- ESP32 starts collecting PCM data via I2S to fill circular buffer and spi interface program pulls data from buffer via SPI
+- User stops pressing button for recording audio
+- ESP32 notifies SPI interface for end of audio data, and then goes into a wait state
+- SPI interface processes last piece of data from buffer and creates a pcm and wav files from the buffer of audio data. Then triggers an interrupt to the pipeline process to start translating. Then enters a wait state for the pipeline to finish.
+- Pipeline process reads the pcm data, and the configuration set by the LCD process that is constantly updating.
+- Pipeline finishes translation and creates translated pcm file. Then notifies the SPI interface process with signal interrupt.
+- SPI interface process then reads the translated PCM data and sends it over to the ESP that is waiting to recieve PCM data.
+- Once the PCM data is transfered back to the ESP, the ESP will drive the amplifier via I2S with the same configuraiton as the I2S for the speaker but transmit now.
+- Amplifier creates the appropriate voltages to drive speaker.
+
+---
+
+# 05-03-2025 - Validated performance of working pipeline on the CM5
+
+After getting poor performance on the whisper models creating high latency issues within our inference pipeline, I ran some tests for how the models where affecting the performance of the system.
+
+In the first test, I used the following configuration:
+
+Configuration:
+- llama.cpp: mistral-7b.Q4_K_M.gguf
+- whisper.cpp: ggml-large-v3-turbo.bin
+
+
+
+![bad_mem](images/bad_memory_result.png)
+
+Results: 
+- Total Runtime: 90s
+- Whisper Inference Duration: 55s
+- Translation + TTS Duration: 15s
+- Peak RSS: ~6300 MB
+- Peak VSZ: ~6700 MB
+
+
+In the second test, I changed the model for the transcription and it made a world of difference:
+
+Configuration:
+- llama.cpp: mistral-7b.Q4_K_M.gguf
+- whisper.cpp: ggml-tiny.bin
+
+
+
+![good_mem](images/good_memory_result.png)
+
+Results: 
+- Total Runtime: 38s (2.37x Faster)
+- Whisper Inference Duration: 19s (2.89x Faster)
+- Translation + TTS Duration: 6s (2.5x Faster)
+- Peak RSS: ~4500 MB (28.6% Less)
+- Peak VSZ: ~4900 MB (26.9% Less)
+
+
+I also ran some tests for the translation accuracy:
+
+Configuration:
+- llama.cpp: mistral-7b.Q4 K M.gguf
+- whisper.cpp: ggml-tiny.bin
+- Speech Dataset: LibriSpeech (16kHz PCM + transcriptions)
+
+Results:
+- Average Levenshtein Accuracy: 92.3%
+- Average Semantic Similarity: 90.5%
+
+This test used the Speech dataset that had PCM audio with transcriptions so that I can have many samples of data to send into the pipeline and validate quickly the performance of accuracy over hundreds of samples of data. I could take out the transcribed text and the translated text and update the accuracy in edit distance and semantic similarity for all samples.
