@@ -1,2 +1,2 @@
 source=English
-destination=Norwegian
+destination=Chinese

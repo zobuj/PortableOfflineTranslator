@@ -1,37 +1,34 @@
 #!/bin/bash
 
-# === Kill existing SPI interface instances ===
-echo "Cleaning up existing spi_interface.py instances..."
-pkill -f spi_interface.py
-
 # === Build Pipeline ===
 pushd src/rspcm/ > /dev/null
-# ./rebuild.sh
 cd build/
 make
 popd > /dev/null
 
-# === Run Pipeline Executable (showing output) ===
+# === Run Pipeline with Logging ===
 PIPELINE_EXEC=src/rspcm/build/bin/pipeline
 if [[ ! -f $PIPELINE_EXEC ]]; then
     echo "Error: Pipeline executable not found at $PIPELINE_EXEC"
     exit 1
 fi
 
-echo "Starting pipeline..."
-$PIPELINE_EXEC &
-PIPELINE_PID=$!
-echo "Pipeline PID: $PIPELINE_PID"
+MEM_LOG="pipeline_out/pipeline_mem_log.csv"
+mkdir -p pipeline_out
+echo "timestamp,rss_kb,vsz_kb" > $MEM_LOG
 
-# === Run SPI Interface Script (also showing output) ===
-pushd src/spi_interface/ > /dev/null
-echo "Starting SPI interface..."
-python3 spi_interface.py "$PIPELINE_PID" &
-SPI_PID=$!
-popd > /dev/null
+# Run pipeline in a subshell so we can track its PID and wait on it
+(
+    $PIPELINE_EXEC &
+    PIPELINE_PID=$!
 
-# === Wait for pipeline to finish ===
-wait $PIPELINE_PID
+    # Memory logging loop
+    while kill -0 $PIPELINE_PID 2>/dev/null; do
+        TIMESTAMP=$(date +%s)
+        MEM=$(ps -o rss=,vsz= -p $PIPELINE_PID)
+        echo "$TIMESTAMP,$MEM" >> $MEM_LOG
+        sleep 0.01
+    done
 
-# === Optional: Kill SPI interface when pipeline exits ===
-kill $SPI_PID 2> /dev/null
+    wait $PIPELINE_PID
+)

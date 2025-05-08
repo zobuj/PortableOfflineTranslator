@@ -152,8 +152,10 @@ struct whisper_params {
     bool flash_attn    = false;
 
     std::string language  = "en";
-    std::string model     = "/home/lorenzo/Documents/PortableOfflineTranslator/src/rspcm/whisper.cpp/models/ggml-tiny.bin";
-    // std::string model     = "/home/lorenzo/Documents/PortableOfflineTranslator/src/rspcm/whisper.cpp/models/ggml-large-v3-turbo.bin";
+    // std::string model     = "/Users/lorenzobujalilsilva/Documents/school/ECE445/translator/src/rspcm/whisper.cpp/models/ggml-tiny.bin";
+    std::string model     = "/Users/lorenzobujalilsilva/Documents/school/ECE445/translator/src/rspcm/whisper.cpp/models/ggml-tiny.bin";
+    
+    // std::string model     = "/Users/lorenzobujalilsilva/Documents/school/ECE445/translator/src/rspcm/whisper.cpp/models/ggml-large-v3-turbo.bin";
     std::string fname_out = "";
 };
 
@@ -229,7 +231,7 @@ std::string transcribe(std::string lang){
 
         // std::string pcm_filename = "../pcm_generator/input/input.pcm";
         // std::string pcm_filename = "../inmp441/output/microphone_output.pcm";
-        std::string pcm_filename = "/home/lorenzo/Documents/PortableOfflineTranslator/src/spi_interface/recording_input.pcm";
+        std::string pcm_filename = "/Users/lorenzobujalilsilva/Documents/school/ECE445/translator/src/spi_interface/recording_input.pcm";
         std::ifstream pcm_file(pcm_filename, std::ios::binary);
         
         if (!pcm_file) {
@@ -335,7 +337,7 @@ int translate(const std::string &text_in, std::string &text_out, std::string &de
     }
 
     // path to the model gguf file
-    std::string model_path = "/home/lorenzo/Documents/PortableOfflineTranslator/src/rspcm/llama.cpp/models/mistral-7b.Q4_K_M.gguf";
+    std::string model_path = "/Users/lorenzobujalilsilva/Documents/school/ECE445/translator/src/rspcm/llama.cpp/models/mistral-7b.Q4_K_M.gguf";
     // prompt to generate text from
     std::string prompt = "-p Translate the following text to " + dest_langauge + ": ' " + escaped_text + " ' --reverse-prompt " + dest_langauge + ":";
     // number of layers to offload to the GPU
@@ -484,7 +486,9 @@ int translate(const std::string &text_in, std::string &text_out, std::string &de
 #include <string>
 
 void get_language_config(std::string &source_lang, std::string &dest_lang) {
-    std::ifstream config("/home/lorenzo/Documents/PortableOfflineTranslator/src/user_interface/lcd/config.txt");
+    // std::ifstream config("/Users/lorenzobujalilsilva/Documents/school/ECE445/translator/src/user_interface/lcd/config.txt");
+    std::ifstream config("/Users/lorenzobujalilsilva/Documents/school/ECE445/translator/src/user_interface/lcd/config.txt");
+    
     if (!config) {
         std::cerr << "Error opening config.txt" << std::endl;
         return;
@@ -508,12 +512,12 @@ int main(int argc, char ** argv){
 
     fprintf(stdout, "Starting Translation Pipeline...\n");
 
-    while(1){
+    // while(1){
         fprintf(stdout, "Waiting for translation request from MCU...\n");
         fprintf(stdout, "Press Ctrl+C to exit.\n");
         
-        pause();  // Wait until SIGUSR1 or SIGINT
-        if (do_translate) {
+        // pause();  // Wait until SIGUSR1 or SIGINT
+        // if (do_translate) {
             do_translate = 0; // Reset Flag
             
             // Start Timing Transaction
@@ -536,32 +540,32 @@ int main(int argc, char ** argv){
             std::string transcribed_text = transcribe(lang_map.at(source_language).second); //whisper
             
             // === Write transcribed text to file ===
-            std::ofstream out("/home/lorenzo/Documents/PortableOfflineTranslator/src/user_interface/lcd/transcribed_text.txt");
+            std::ofstream out("/Users/lorenzobujalilsilva/Documents/school/ECE445/translator/src/user_interface/lcd/transcribed_text.txt");
             if (out.is_open()) {
                 out << transcribed_text;
                 out.close();
             } else {
-                std::cerr << "Failed to write to /home/lorenzo/Documents/PortableOfflineTranslator/src/user_interface/lcd/transcribed_text.txt\n";
+                std::cerr << "Failed to write to /Users/lorenzobujalilsilva/Documents/school/ECE445/translator/src/user_interface/lcd/transcribed_text.txt\n";
             }
 
-            // === Read PID and send SIGUSR1 ===
-            std::ifstream pidfile("/home/lorenzo/Documents/PortableOfflineTranslator/src/user_interface/lcd/lcd_display.pid");
-            if (pidfile.is_open()) {
-                int pid;
-                pidfile >> pid;
-                pidfile.close();
+            // // === Read PID and send SIGUSR1 ===
+            // std::ifstream pidfile("/Users/lorenzobujalilsilva/Documents/school/ECE445/translator/src/user_interface/lcd/lcd_display.pid");
+            // if (pidfile.is_open()) {
+            //     int pid;
+            //     pidfile >> pid;
+            //     pidfile.close();
             
-                std::string cmd = "sudo kill -SIGUSR1 " + std::to_string(pid);
-                int ret = system(cmd.c_str());
+            //     std::string cmd = "sudo kill -SIGUSR1 " + std::to_string(pid);
+            //     int ret = system(cmd.c_str());
             
-                if (ret == 0) {
-                    std::cout << "Sent SIGUSR1 to display process (PID " << pid << ") using sudo\n";
-                } else {
-                    std::cerr << "Failed to send SIGUSR1 using sudo (exit code " << ret << ")\n";
-                }
-            } else {
-                std::cerr << "Failed to read PID file\n";
-            }
+            //     if (ret == 0) {
+            //         std::cout << "Sent SIGUSR1 to display process (PID " << pid << ") using sudo\n";
+            //     } else {
+            //         std::cerr << "Failed to send SIGUSR1 using sudo (exit code " << ret << ")\n";
+            //     }
+            // } else {
+            //     std::cerr << "Failed to read PID file\n";
+            // }
 
             std::string translated_text;
             translate(transcribed_text, translated_text, dest_language); //llama
@@ -570,43 +574,43 @@ int main(int argc, char ** argv){
             fprintf(stdout, "Translated text (%s): \033[0;32m%s\033[0m\n\n", dest_language.c_str(), translated_text.c_str()); // Green
             
             // Output the translated text to a file
-            std::ofstream output_file("/home/lorenzo/Documents/PortableOfflineTranslator/src/rspcm/output/translated_text.txt"); // mozilla
+            std::ofstream output_file("/Users/lorenzobujalilsilva/Documents/school/ECE445/translator/src/rspcm/output/translated_text.txt"); // mozilla
             if (!output_file) {
                 fprintf(stderr, "Error: Unable to open output file for writing.\n");
             } else {
                 output_file << translated_text;
                 output_file.close();
-                fprintf(stdout, "Translated text has been written to /home/lorenzo/Documents/PortableOfflineTranslator/src/rspcm/output/translated_text.txt\n");
+                fprintf(stdout, "Translated text has been written to /Users/lorenzobujalilsilva/Documents/school/ECE445/translator/src/rspcm/output/translated_text.txt\n");
             }
             
-            // Text to Speech
-            std::string tts_command = "bash /home/lorenzo/Documents/PortableOfflineTranslator/src/rspcm/piper/voices/tts.sh \"" + dest_language + "\"";
+            // // Text to Speech
+            // std::string tts_command = "bash /Users/lorenzobujalilsilva/Documents/school/ECE445/translator/src/rspcm/piper/voices/tts.sh \"" + dest_language + "\"";
 
-            int ret = system(tts_command.c_str());
+            // int ret = system(tts_command.c_str());
             
-            if (ret != 0) {
-                fprintf(stderr, "Error: TTS command failed.\n");
-            }
+            // if (ret != 0) {
+            //     fprintf(stderr, "Error: TTS command failed.\n");
+            // }
         
-            // Read the PID of the SPI interface process
-            const char* pid_file_path = "/home/lorenzo/Documents/PortableOfflineTranslator/src/spi_interface/spi_interface.pid";
-            std::ifstream pid_file(pid_file_path);
-            if (!pid_file.is_open()) {
-                fprintf(stderr, "Error: Could not open PID file.\n");
-                return 1;
-            }
+            // // Read the PID of the SPI interface process
+            // const char* pid_file_path = "/Users/lorenzobujalilsilva/Documents/school/ECE445/translator/src/spi_interface/spi_interface.pid";
+            // std::ifstream pid_file(pid_file_path);
+            // if (!pid_file.is_open()) {
+            //     fprintf(stderr, "Error: Could not open PID file.\n");
+            //     return 1;
+            // }
 
-            int spi_pid;
-            pid_file >> spi_pid;
-            pid_file.close();
+            // int spi_pid;
+            // pid_file >> spi_pid;
+            // pid_file.close();
         
-            // Send SIGUSR1 to the SPI process
-            if (kill(spi_pid, SIGUSR1) != 0) {
-                perror("Error sending SIGUSR1");
-                return 1;
-            }
+            // // Send SIGUSR1 to the SPI process
+            // if (kill(spi_pid, SIGUSR1) != 0) {
+            //     perror("Error sending SIGUSR1");
+            //     return 1;
+            // }
         
-            printf("Sent SIGUSR1 to SPI interface process (PID %d)\n", spi_pid);
+            // printf("Sent SIGUSR1 to SPI interface process (PID %d)\n", spi_pid);
 
             clock_gettime(CLOCK_MONOTONIC, &end);
             
@@ -614,8 +618,8 @@ int main(int argc, char ** argv){
             
             fprintf(stdout, "Translation complete. Time taken: %.6f seconds.\n", elapsed_time);
             fprintf(stdout, "Returning to idle state.\n");
-        }
-    }
+        // }
+    // }
 
     return 0;
 }
