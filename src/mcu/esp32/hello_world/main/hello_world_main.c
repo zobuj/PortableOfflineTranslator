@@ -18,7 +18,7 @@
 
 #define STATUS_LED_GPIO GPIO_NUM_13
 
-#define PI 3.14159265
+#define PI 3.14
 
 // Speaker I2S Configuration
 #define SPEAKER_I2S_SD   17
@@ -34,7 +34,7 @@
 
 #define bufferCnt 16 // DMA Buffers
 #define bufferLen 1024 // DMA Buffer Size
-int16_t sBuffer[bufferLen]; // DMA Buffer - 32-bit size for 24-bit PCM Data
+int16_t sBuffer[bufferLen]; // DMA Buffer - 32-bit size for 16-bit PCM Data
 int16_t circular_buffer[bufferCnt * bufferLen];
 volatile int write_index = 0;
 volatile int read_index = 0;
@@ -50,10 +50,9 @@ int16_t rx_buffer[rx_buffer_len];
 #define SPI_HOST       SPI3_HOST  // VSPI
 #define DMA_CH         SPI_DMA_CH_AUTO
 #define QUEUE_SIZE     3
-#define TRANSFER_SIZE  1024       // bytes
+#define TRANSFER_SIZE  1024
 
 // GPIO Interrupt Pin
-// #define INT_GPIO GPIO_NUM_4 // SPI Transfer Pin
 #define INT_GPIO GPIO_NUM_16 // SPI Transfer Pin
 #define START_GPIO GPIO_NUM_15
 
@@ -71,10 +70,8 @@ typedef enum {
 volatile system_state_t curr_state = STATE_INIT;
 
 void speaker_setup() {
-    // I2S Driver Install
     const i2s_config_t i2s_config = {
         .mode = I2S_MODE_MASTER | I2S_MODE_TX,
-        // .sample_rate = 44100,
         .sample_rate = 16000,
         .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
@@ -88,7 +85,7 @@ void speaker_setup() {
     };
     ESP_ERROR_CHECK(i2s_driver_install(SPEAKER_I2S_PORT, &i2s_config, 0, NULL));
 
-    // I2S Set Pin
+
     const i2s_pin_config_t pin_config = {
         .bck_io_num = SPEAKER_I2S_SCK,
         .ws_io_num = SPEAKER_I2S_WS,
@@ -97,15 +94,13 @@ void speaker_setup() {
     };
     ESP_ERROR_CHECK(i2s_set_pin(SPEAKER_I2S_PORT, &pin_config));
 
-    // I2S Start
     i2s_start(SPEAKER_I2S_PORT);
 }
 
 void mic_setup() {
-    // I2S Driver Install
+
     const i2s_config_t i2s_config = {
         .mode = I2S_MODE_MASTER | I2S_MODE_RX,
-        // .sample_rate = 44100,
         .sample_rate = 16000,
         .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
@@ -119,7 +114,6 @@ void mic_setup() {
     };
     ESP_ERROR_CHECK(i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL));
 
-    // I2S Set Pin
     const i2s_pin_config_t pin_config = {
         .bck_io_num = I2S_SCK,
         .ws_io_num = I2S_WS,
@@ -128,13 +122,12 @@ void mic_setup() {
     };
     ESP_ERROR_CHECK(i2s_set_pin(I2S_PORT, &pin_config));
 
-    // I2S Start
     i2s_start(I2S_PORT);
 }
 
 void trigger_transfer_interrupt() {
     gpio_set_level(INT_GPIO, 1);
-    vTaskDelay(pdMS_TO_TICKS(10)); // short pulse
+    vTaskDelay(pdMS_TO_TICKS(10));
     gpio_set_level(INT_GPIO, 0);
 }
 
@@ -147,7 +140,7 @@ void spi_interrupt_pin_setup() {
         .intr_type = GPIO_INTR_DISABLE
     };
     gpio_config(&io_conf);
-    gpio_set_level(INT_GPIO, 0); // Ensure it's low initially
+    gpio_set_level(INT_GPIO, 0);
 }
 
 void spi_transfer_setup() {
@@ -155,7 +148,6 @@ void spi_transfer_setup() {
 
     esp_err_t ret;
 
-    // Configure SPI bus
     spi_bus_config_t bus_cfg = {
         .mosi_io_num = PIN_NUM_MOSI,
         .miso_io_num = PIN_NUM_MISO,
@@ -164,7 +156,6 @@ void spi_transfer_setup() {
         .quadhd_io_num = -1
     };
 
-    // Configure SPI slave interface
     spi_slave_interface_config_t slave_cfg = {
         .spics_io_num = PIN_NUM_CS,
         .flags = 0,
@@ -201,27 +192,20 @@ void mic_task(void *arg) {
         if (result == ESP_OK) {
             int next_write = (write_index + 1) % bufferCnt;
 
-            // If buffer is full, drop the oldest block by advancing the read_index
+            // buffer overflow
             if (next_write == read_index) {
                 ESP_LOGW(I2S_MIC_TAG, "Buffer overflow: overwriting oldest block");
                 read_index = (read_index + 1) % bufferCnt;
             }
 
-            // Copy the new audio block into circular buffer
+            // Copy the audio block into circular buffer
             memcpy(&circular_buffer[write_index * bufferLen], sBuffer, bufferLen * sizeof(int16_t));
             write_index = next_write;
 
-            // // Trigger the SPI master (Raspberry Pi) via interrupt
-            // trigger_transfer_interrupt();
-
-            // Optional: log a few samples for debugging
             ESP_LOGI(I2S_MIC_TAG, "Sample[0..4]: %d %d %d %d %d", sBuffer[0], sBuffer[1], sBuffer[2], sBuffer[3], sBuffer[4]);
         } else {
             ESP_LOGE(I2S_MIC_TAG, "i2s_read failed: %s", esp_err_to_name(result));
         }
-
-        // // Small delay between prints to prevent flooding
-        // vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 
@@ -230,39 +214,16 @@ void spi_task(void *arg) {
 
     while (1) {
         if (curr_state == STATE_WAIT_RESP) {
-            // // If the Pi sends data back, receive and handle it here
-            // spi_slave_transaction_t recv = {
-            //     .length = rx_buffer_len * sizeof(int16_t) * 8,
-            //     .rx_buffer = rx_buffer,
-            //     .tx_buffer = NULL
-            // };
-
-            // esp_err_t ret = spi_slave_transmit(SPI_HOST, &recv, portMAX_DELAY);
-            // if (ret == ESP_OK) {
-            //     ESP_LOGI(SPI_TRANSFER_TAG, "Received response from Pi");
-            //     // Process received data
-            //     curr_state = STATE_INIT;  // Reset to init or next logical state
-
-            //     // Clear circular buffer pointers
-            //     write_index = 0;
-            //     read_index = 0;
-
-            // } else if (ret != ESP_OK) {
-            //     ESP_LOGE(SPI_TRANSFER_TAG, "SPI receive error: %s", esp_err_to_name(ret));
-            // }
 
             ESP_LOGI(SPI_TRANSFER_TAG, "Receiving translated PCM from Raspberry Pi...");
 
-            // // Set up I2S for playback
-            // speaker_setup();
-
-            // Buffer to receive PCM chunks
+            // Buffer to receive PCM data from Pi
             uint8_t rx_chunk[TRANSFER_SIZE*2];
             size_t bytes_written;
 
             while (1) {
                 spi_slave_transaction_t trans = {
-                    .length = TRANSFER_SIZE * 2 * 8,  // in bits
+                    .length = TRANSFER_SIZE * 2 * 8,
                     .rx_buffer = rx_chunk,
                     .tx_buffer = NULL
                 };
@@ -270,26 +231,21 @@ void spi_task(void *arg) {
                 esp_err_t ret = spi_slave_transmit(SPI_HOST, &trans, portMAX_DELAY);
                 if (ret == ESP_OK) {
                     ESP_LOGI(SPI_TRANSFER_TAG, "Received data from Pi");
-                    // Check for special end signal (0x1234)
-                    uint16_t maybe_end_signal;
-                    memcpy(&maybe_end_signal, rx_chunk, sizeof(uint16_t));
-                    if (maybe_end_signal == 0x1234) {
+                    uint16_t end_signal;
+                    memcpy(&end_signal, rx_chunk, sizeof(uint16_t));
+                    if (end_signal == 0x1234) {
                         ESP_LOGI(SPI_TRANSFER_TAG, "End of PCM stream received.");
                         break;
                     }
 
-                    // Write PCM chunk to speaker
-                    ESP_LOGI("SPEAKER", "Writing PCM chunk to speaker...");
+                    // Write audio data to speaker
+                    ESP_LOGI("SPEAKER", "Writing PCM data to speaker...");
                     i2s_write(SPEAKER_I2S_PORT, rx_chunk, TRANSFER_SIZE*2, &bytes_written, portMAX_DELAY);
                 } else {
                     ESP_LOGE(SPI_TRANSFER_TAG, "SPI receive error: %s", esp_err_to_name(ret));
                     break;
                 }
             }
-
-            // i2s_zero_dma_buffer(SPEAKER_I2S_PORT);
-            // i2s_stop(SPEAKER_I2S_PORT);
-            // i2s_driver_uninstall(SPEAKER_I2S_PORT);
 
             curr_state = STATE_INIT;
             gpio_set_level(STATUS_LED_GPIO, 0);
@@ -312,7 +268,7 @@ void spi_task(void *arg) {
                 ESP_LOGE(SPI_TRANSFER_TAG, "SPI transmit error: %s", esp_err_to_name(ret));
             }
         } else {
-            vTaskDelay(10 / portTICK_PERIOD_MS); // Wait a bit if there's no data
+            vTaskDelay(10 / portTICK_PERIOD_MS); 
         }
     }
 }
@@ -328,17 +284,17 @@ void start_button_task(void *arg) {
             case STATE_INIT:
                 if(pressed && !last_state) {
                     curr_state = STATE_RECORDING;
-                    // Trigger the SPI master (Raspberry Pi) via interrupt
-                    trigger_transfer_interrupt(); // Start Polling
+                    // Trigger interrupt to start polling
+                    trigger_transfer_interrupt();
                     ESP_LOGI(START_BUTTON_TAG, "Button pressed, transitioning to RECORDING");
                 }
                 break;
             case STATE_RECORDING:
                 if (!pressed && last_state) {
                     curr_state = STATE_WAIT_RESP;
-                    gpio_set_level(STATUS_LED_GPIO, 1);  // Turn LED ON
-                    // Trigger the SPI master (Raspberry Pi) via interrupt
-                    trigger_transfer_interrupt(); // End Polling
+                    gpio_set_level(STATUS_LED_GPIO, 1);
+                    // Trigger interrupt to end polling
+                    trigger_transfer_interrupt();
                     ESP_LOGI(START_BUTTON_TAG, "Button released, transitioning to WAIT_RESPONSE");
                 }
                 break;
@@ -346,24 +302,18 @@ void start_button_task(void *arg) {
                 break;
         }
 
-
-
-
         last_state = pressed;
         vTaskDelay(50 / portTICK_PERIOD_MS);  // debounce
     }
 }
 
-
-
-
 void speaker_task(void *arg) {
     
     const int sample_rate = 44100;
-    const int freq = 440; // A4 note
+    const int freq = 440;
     const int duration_sec = 2;
     const int samples = sample_rate * duration_sec;
-    const float amplitude = 16000.0f;  // Max 32767 for int16_t
+    const float amplitude = 16000.0f;
     size_t bytes_written;
 
     int16_t *sine_wave = (int16_t *)malloc(samples * sizeof(int16_t));
@@ -386,11 +336,11 @@ void speaker_task(void *arg) {
 }
 
 void loopback_task(void *arg) {
-    mic_setup();     // Setup mic I2S (I2S_NUM_0)
-    speaker_setup(); // Setup speaker I2S (I2S_NUM_1)
+    mic_setup();
+    speaker_setup();
 
     size_t bytes_read, bytes_written;
-    int16_t mic_buf[bufferLen]; // Temporary buffer
+    int16_t mic_buf[bufferLen];
 
     ESP_LOGI("LOOPBACK", "Starting mic-to-speaker passthrough...");
 
@@ -408,8 +358,6 @@ void loopback_task(void *arg) {
     }
 }
 
-
-
 void app_main(void) {
     speaker_setup();
 
@@ -422,14 +370,12 @@ void app_main(void) {
     };
     gpio_config(&status_gpio_cfg);
     
-    // Default to OFF
     gpio_set_level(STATUS_LED_GPIO, 0);
     
 
     // USE FOR TESTING
     // xTaskCreatePinnedToCore(speaker_task, "speaker_task", 4096, NULL, 5, NULL, 1);
     // xTaskCreatePinnedToCore(loopback_task, "loopback_task", 8192, NULL, 5, NULL, 1);
-
 
     xTaskCreatePinnedToCore(start_button_task, "start_button_task", 2048, NULL, 2, NULL, 1);
     xTaskCreatePinnedToCore(mic_task, "mic_task", 8192, NULL, 5, NULL, 1);
